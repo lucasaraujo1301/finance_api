@@ -1,0 +1,1 @@
+from modules.core.tests.fixtures import *

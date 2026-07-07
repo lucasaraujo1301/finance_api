@@ -8,7 +8,9 @@ dependencies = [
     "alembic>=1.18.5",
     "asyncpg>=0.31.0",
     "fastapi[standard]>=0.139.0",
+    "httpx2>=2.5.0",
     "psycopg2>=2.9.12",
+    "pytest-asyncio>=1.4.0",
     "sqlalchemy[asyncio]>=2.0.51",
     "uvicorn>=0.50.0",
 ]
@@ -21,7 +23,7 @@ dev = [
 ]
 
 [tool.fastapi]         
-    entrypoint = "main:app"
+    entrypoint = "modules.core.main:app"
 
 [tool.ruff]
 exclude = [
@@ -42,7 +44,11 @@ select = [
     "T",
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"*/tests/**/*.py" = ["F403"]
+
 [tool.ruff.lint.isort]
+known-first-party = ["modules"]
 lines-between-types = 1
 
 [tool.ruff.format]

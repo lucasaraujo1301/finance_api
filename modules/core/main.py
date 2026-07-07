@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 
+from modules.core.middlewares import ProcessTimeMiddleware
+
 app = FastAPI()
+app.add_middleware(ProcessTimeMiddleware)
 
 
 @app.get("/")
