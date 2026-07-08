@@ -7,6 +7,7 @@ requires-python = ">=3.14"
 dependencies = [
     "alembic>=1.18.5",
     "asyncpg>=0.31.0",
+    "cryptography>=49.0.0",
     "fastapi[standard]>=0.139.0",
     "httpx2>=2.5.0",
     "psycopg2>=2.9.12",
@@ -17,6 +18,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "polyfactory>=3.3.0",
     "pytest>=9.1.1",
     "ruff>=0.15.20",
     "ty>=0.0.56",
@@ -70,3 +72,7 @@ line-ending = "auto"
 # This is currently disabled by default, but it is planned for this
 # to be opt-out in the future.
 docstring-code-format = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"

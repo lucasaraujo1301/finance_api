@@ -12,6 +12,18 @@ services:
       - POSTGRES_USER=devuser
       - POSTGRES_PASSWORD=changeme
 
+  test-db:
+    image: postgres:18-alpine
+    volumes:
+      - dev-test-db-data:/var/lib/postgresql
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=testdb
+      - POSTGRES_USER=devuser
+      - POSTGRES_PASSWORD=changeme
+
 
 volumes:
   dev-db-data:
+  dev-test-db-data:
