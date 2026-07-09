@@ -27,3 +27,8 @@ class BaseException(HTTPException):
             raise Exception("Wrong module configuration")
 
         return self.module.value
+
+
+class SystemException(BaseException):
+    module = Modules.system
+    code = 1
