@@ -1,6 +1,5 @@
 import pytest
 
-from fastapi import HTTPException
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError
 
@@ -17,10 +16,6 @@ class TestExceptionHandlers:
     @pytest.fixture(autouse=True)
     def setup(self, test_app):
         register_exception_handlers(test_app)
-
-        @test_app.get("/http_error")
-        async def http_error():
-            raise HTTPException(status_code=403, detail="Forbidden")
 
         @test_app.get("/server_error")
         async def server_error():
@@ -45,12 +40,6 @@ class TestExceptionHandlers:
             response = await client.get("/dummy")
             assert response.status_code == 200
             assert response.json() == {"message": "I am a temporary test route"}
-
-    async def test_http_exception_returns_correct_status_and_error(self, client_factory, test_app):
-        async with client_factory(test_app) as client:
-            response = await client.get("/http_error")
-            assert response.status_code == 403
-            assert response.json() == {"success": False, "error": "Forbidden"}
 
     async def test_validation_error_returns_422_with_errors(self, client_factory, test_app):
         async with client_factory(test_app) as client:

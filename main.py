@@ -7,4 +7,5 @@ from modules.user.router import router as user_router
 app = FastAPI()
 register_exception_handlers(app)
 app.add_middleware(ProcessTimeMiddleware)
+
 app.include_router(user_router, prefix="/api/v1")
