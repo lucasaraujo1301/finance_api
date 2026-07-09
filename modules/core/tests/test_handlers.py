@@ -4,7 +4,12 @@ from fastapi import HTTPException
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError
 
+from modules.core.expcetion import BaseException, Modules
 from modules.core.handlers import register_exception_handlers
+
+
+class SomeException(BaseException):
+    module = Modules.system
 
 
 @pytest.mark.asyncio
@@ -26,6 +31,10 @@ class TestExceptionHandlers:
             raise RequestValidationError(
                 [{"loc": ("body", "x"), "msg": "field required", "type": "value_error.missing"}]
             )
+
+        @test_app.get("/base_exception")
+        async def base_exception():
+            raise SomeException()
 
         @test_app.get("/integrity_error")
         async def integrity_error():
@@ -62,3 +71,16 @@ class TestExceptionHandlers:
             response = await client.get("/server_error")
             assert response.status_code == 500
             assert response.json() == {"success": False, "error": "Something went wrong"}
+
+    async def test_base_exception_handler(self, client_factory, test_app):
+        expect = {
+            "success": False,
+            "error": {
+                "code": SomeException().error_code,
+                "message": SomeException.message
+            }
+        }
+        async with client_factory(test_app, raise_server_exceptions=False) as client:
+            response = await client.get("/base_exception")
+            assert response.status_code == SomeException.status_code
+            assert response.json() == expect

@@ -3,6 +3,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
+from modules.core.expcetion import BaseException
+
 
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
@@ -14,6 +16,18 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
+        if isinstance(exc, BaseException):
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={
+                    "success": False,
+                    "error": {
+                        "code": exc.error_code,
+                        "message": exc.message
+                    }
+                },
+            )
+
         return JSONResponse(
             status_code=exc.status_code,
             content={"success": False, "error": exc.detail},
