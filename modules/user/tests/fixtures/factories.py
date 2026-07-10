@@ -11,3 +11,7 @@ class UserFactory(SQLAlchemyFactory[User]):
     full_name = Use(SQLAlchemyFactory.__faker__.name)
     telegram_id = Use(lambda: str(SQLAlchemyFactory.__faker__.unique.random_number(digits=4)))
     api_key = Use(lambda: generate_api_key()[1])
+
+    @classmethod
+    def api_key_pair(cls) -> tuple[str, str]:
+        return generate_api_key()

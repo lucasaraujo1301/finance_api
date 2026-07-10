@@ -1,6 +1,8 @@
+import hashlib
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.user.exceptions import UserAlreadyExistException
+from modules.user.exceptions import UserAlreadyExistException, UserNotFound
 from modules.user.models import User
 from modules.user.repository import UserRepository
 from modules.user.schemas import CreateUserSchema, UserSchema
@@ -23,3 +25,12 @@ class UserService:
             **UserSchema.model_validate(user).model_dump(),
             "api_key": raw_key,
         }
+
+    async def get_user_by_api_key(self, api_key: str) -> dict:
+        encrypted_key = hashlib.sha256(api_key.encode()).hexdigest()
+        user = await self._repository.get_user_by_api_key(encrypted_key)
+
+        if user is None:
+            raise UserNotFound()
+
+        return UserSchema.model_validate(user).model_dump()

@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.user.exceptions import UserAlreadyExistException
+from modules.user.exceptions import UserAlreadyExistException, UserNotFound
 from modules.user.models import User
 from modules.user.schemas import CreateUserSchema
 from modules.user.services import UserService
@@ -60,3 +60,24 @@ class TestUserService:
 
         with pytest.raises(UserAlreadyExistException):
             await service.create_user(data)
+
+    async def test_get_user_by_api_key_returns_user(
+        self, db_session: AsyncSession, user_with_api_key: tuple[User, str]
+    ):
+        user, raw_key = user_with_api_key
+        service = UserService(db_session)
+
+        result = await service.get_user_by_api_key(raw_key)
+
+        assert result == {
+            "id": user.id,
+            "full_name": user.full_name,
+            "telegram_id": user.telegram_id,
+            "api_key": user.api_key,
+        }
+
+    async def test_get_user_by_api_key_raises_when_user_not_found(self, db_session: AsyncSession):
+        service = UserService(db_session)
+
+        with pytest.raises(UserNotFound):
+            await service.get_user_by_api_key(self.RAW_KEY)
