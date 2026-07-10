@@ -19,13 +19,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def http_exception_handler(request: Request, exc: BaseException):
         return JSONResponse(
             status_code=exc.status_code,
-            content={
-                "success": False,
-                "error": {
-                    "code": exc.error_code,
-                    "message": exc.message
-                }
-            },
+            content={"success": False, "error": {"code": exc.error_code, "message": exc.message}},
         )
 
     @app.exception_handler(IntegrityError)
@@ -42,9 +36,6 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=SystemException.status_code,
             content={
                 "success": False,
-                "error": {
-                    "code": SystemException().error_code,
-                    "message": SystemException.message
-                }
+                "error": {"code": SystemException().error_code, "message": SystemException.message},
             },
         )

@@ -7,9 +7,9 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from main import app as main_app
 from modules.core.database import get_db
 from modules.core.handlers import register_exception_handlers
-from modules.core.main import app as main_app
 from modules.core.middlewares import ProcessTimeMiddleware
 
 

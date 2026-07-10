@@ -62,13 +62,7 @@ class TestExceptionHandlers:
             assert response.json() == {"success": False, "error": "Something went wrong"}
 
     async def test_base_exception_handler(self, client_factory, test_app):
-        expect = {
-            "success": False,
-            "error": {
-                "code": SomeException().error_code,
-                "message": SomeException.message
-            }
-        }
+        expect = {"success": False, "error": {"code": SomeException().error_code, "message": SomeException.message}}
         async with client_factory(test_app, raise_server_exceptions=False) as client:
             response = await client.get("/base_exception")
             assert response.status_code == SomeException.status_code

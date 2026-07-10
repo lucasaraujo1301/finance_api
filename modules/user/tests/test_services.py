@@ -31,9 +31,7 @@ class TestUserService:
         assert "id" in result
 
     @patch("modules.user.services.generate_api_key", return_value=(RAW_KEY, ENCRYPTED_KEY))
-    async def test_create_user_stores_encrypted_key_in_database(
-        self, mock_generate_api_key, db_session: AsyncSession
-    ):
+    async def test_create_user_stores_encrypted_key_in_database(self, mock_generate_api_key, db_session: AsyncSession):
         data = CreateUserSchema(full_name="Bob", telegram_id="222")
         service = UserService(db_session)
 
@@ -46,9 +44,7 @@ class TestUserService:
         assert persisted.api_key != result["api_key"]
 
     @patch("modules.user.services.generate_api_key", return_value=(RAW_KEY, ENCRYPTED_KEY))
-    async def test_create_user_without_full_name(
-        self, mock_generate_api_key, db_session: AsyncSession
-    ):
+    async def test_create_user_without_full_name(self, mock_generate_api_key, db_session: AsyncSession):
         data = CreateUserSchema(telegram_id="333")
         service = UserService(db_session)
 

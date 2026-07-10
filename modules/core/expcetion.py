@@ -21,7 +21,7 @@ class BaseException(HTTPException):
 
     def _get_error_code(self):
         return f"{self._get_module_code()}{self.code:03d}"
-    
+
     def _get_module_code(self):
         if not isinstance(self.module, Modules):
             raise Exception("Wrong module configuration")
