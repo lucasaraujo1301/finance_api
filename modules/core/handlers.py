@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
+from modules.core.config import settings
 from modules.core.expcetion import BaseException, SystemException
 from modules.core.logger import logger
 
@@ -31,7 +32,8 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
-        logger.exception(exc)
+        if settings.ENVIRONMENT != "test":
+            logger.exception(exc)
         return JSONResponse(
             status_code=SystemException.status_code,
             content={

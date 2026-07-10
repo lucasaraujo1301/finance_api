@@ -5,6 +5,9 @@ from sqlalchemy.engine import URL
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", frozen=True)
 
+    ENVIRONMENT: str = "development"
+    LOG_LEVEL: str = "DEBUG"
+
     DATABASE_HOST: str
     DATABASE_PORT: int = 5432
     DATABASE_USER: str

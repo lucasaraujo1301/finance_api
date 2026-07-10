@@ -1,5 +1,9 @@
 import logging.config
 
+from modules.core.config import settings
+
+log_level = "WARNING" if settings.ENVIRONMENT == "test" else settings.LOG_LEVEL
+
 logging.config.dictConfig(
     {
         "version": 1,
@@ -25,7 +29,7 @@ logging.config.dictConfig(
             },
         },
         "root": {
-            "level": "DEBUG",
+            "level": log_level,
             "handlers": ["console"],
         },
     }
