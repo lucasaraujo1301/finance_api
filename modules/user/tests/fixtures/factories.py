@@ -1,11 +1,12 @@
 from polyfactory.factories.sqlalchemy_factory import SQLAlchemyFactory
 from polyfactory.fields import Use
 
+from modules.core.tests.fixtures import BaseFactory
 from modules.user.models import User
 from modules.user.utils import generate_api_key
 
 
-class UserFactory(SQLAlchemyFactory[User]):
+class UserFactory(BaseFactory[User]):
     __model__ = User
 
     full_name = Use(SQLAlchemyFactory.__faker__.name)

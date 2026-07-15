@@ -1,12 +1,24 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
+
+LOG_LEVELS = {
+    "development": "DEBUG",
+    "test": "WARNING",
+    "production": "INFO",
+}
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", frozen=True)
 
     ENVIRONMENT: str = "development"
-    LOG_LEVEL: str = "DEBUG"
+    LOG_LEVEL: str = Field(
+        default_factory=lambda data: LOG_LEVELS.get(
+            data["ENVIRONMENT"].lower(),
+            "INFO",
+        )
+    )
 
     DATABASE_HOST: str
     DATABASE_PORT: int = 5432

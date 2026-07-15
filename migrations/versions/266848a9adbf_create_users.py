@@ -26,6 +26,12 @@ def upgrade() -> None:
     sa.Column('full_name', sa.String(length=255), nullable=True),
     sa.Column('telegram_id', sa.String(), nullable=False),
     sa.Column('api_key', sa.String(), nullable=False),
+    sa.Column(
+        "created_at",
+        sa.DateTime(timezone=True),
+        server_default=sa.text("now()"),
+        nullable=False,
+    ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_api_key'), 'users', ['api_key'], unique=True)

@@ -6,6 +6,7 @@ from fastapi import HTTPException, status
 class Modules(Enum):
     system = 0
     user = 1
+    entry = 2
 
 
 class BaseException(HTTPException):

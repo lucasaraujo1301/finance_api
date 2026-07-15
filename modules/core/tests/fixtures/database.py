@@ -29,14 +29,10 @@ def test_session_maker(test_engine):
     return async_sessionmaker(bind=test_engine, class_=AsyncSession, expire_on_commit=False)
 
 
-# 2. Cada teste pede uma sessão, que usa uma conexão e transação dedicada com ROLLBACK
 @pytest_asyncio.fixture(scope="function")
 async def db_session(test_engine, test_session_maker) -> AsyncGenerator[AsyncSession, None]:
-    # Abrimos uma conexão dedicada para o teste
     async with test_engine.connect() as connection:
-        # Iniciamos a transação na conexão externa
         await connection.begin()
 
-        # Vinculamos a sessão a essa conexão específica em transação
         async with test_session_maker(bind=connection) as session:
             yield session
