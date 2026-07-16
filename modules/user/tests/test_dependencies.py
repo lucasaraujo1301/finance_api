@@ -16,12 +16,11 @@ class TestUserDependencies:
 
         result = await get_current_user(api_key=raw_key, user_service=user_service)
 
-        assert result == {
-            "id": user.id,
-            "full_name": user.full_name,
-            "telegram_id": user.telegram_id,
-            "api_key": user.api_key,
-        }
+        assert result.id == user.id
+        assert result.full_name == user.full_name
+        assert result.telegram_id == user.telegram_id
+        assert result.created_at == user.created_at
+        assert result.api_key == user.api_key
 
     async def test_get_current_user_raises_when_api_key_missing(self, db_session: AsyncSession):
         user_service = UserService(db_session)

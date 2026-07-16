@@ -69,12 +69,11 @@ class TestUserService:
 
         result = await service.get_user_by_api_key(raw_key)
 
-        assert result == {
-            "id": user.id,
-            "full_name": user.full_name,
-            "telegram_id": user.telegram_id,
-            "api_key": user.api_key,
-        }
+        assert result.id == user.id
+        assert result.full_name == user.full_name
+        assert result.telegram_id == user.telegram_id
+        assert result.created_at == user.created_at
+        assert result.api_key == user.api_key
 
     async def test_get_user_by_api_key_raises_when_user_not_found(self, db_session: AsyncSession):
         service = UserService(db_session)

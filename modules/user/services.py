@@ -26,11 +26,11 @@ class UserService:
             "api_key": raw_key,
         }
 
-    async def get_user_by_api_key(self, api_key: str) -> dict:
+    async def get_user_by_api_key(self, api_key: str) -> User:
         encrypted_key = hashlib.sha256(api_key.encode()).hexdigest()
         user = await self._repository.get_user_by_api_key(encrypted_key)
 
         if user is None:
             raise UserNotFound()
 
-        return UserSchema.model_validate(user).model_dump()
+        return user
