@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,5 +16,5 @@ class EntryRepository:
         await self._session.refresh(entry)
         return entry
 
-    async def get_by_user_id(self, user_id: int) -> list[Entry]:
+    async def get_by_user_id(self, user_id: UUID) -> list[Entry]:
         return list(await self._session.scalars(select(Entry).where(Entry.user_id == user_id)))

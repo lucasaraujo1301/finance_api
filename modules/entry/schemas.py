@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from uuid import UUID
 
 from pydantic import Field
 
@@ -25,5 +26,5 @@ class EntryRequestSchema(BaseEntrySchema):
 
 
 class EntryResponseSchema(BaseEntrySchema):
-    id: int
+    id: UUID
     created_at: datetime
