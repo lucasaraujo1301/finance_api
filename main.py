@@ -3,6 +3,7 @@ from fastapi import FastAPI
 
 from modules.core.handlers import register_exception_handlers
 from modules.core.middlewares import ProcessTimeMiddleware
+from modules.entry.router import router as entry_router
 from modules.user.router import router as user_router
 
 app = FastAPI()
@@ -13,3 +14,4 @@ app.add_middleware(CorrelationIdMiddleware)
 register_exception_handlers(app)
 
 app.include_router(user_router, prefix="/api/v1")
+app.include_router(entry_router, prefix="/api/v1")

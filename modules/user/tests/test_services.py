@@ -5,6 +5,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from modules.core.logger import logger
 from modules.user.exceptions import UserAlreadyExistException, UserNotFound
 from modules.user.models import User
 from modules.user.schemas import CreateUserSchema
@@ -21,7 +22,7 @@ class TestUserService:
         self, mock_generate_api_key, db_session: AsyncSession
     ):
         data = CreateUserSchema(full_name="Alice", telegram_id="111")
-        service = UserService(db_session)
+        service = UserService(logger, db_session)
 
         result = await service.create_user(data)
 
@@ -33,7 +34,7 @@ class TestUserService:
     @patch("modules.user.services.generate_api_key", return_value=(RAW_KEY, ENCRYPTED_KEY))
     async def test_create_user_stores_encrypted_key_in_database(self, mock_generate_api_key, db_session: AsyncSession):
         data = CreateUserSchema(full_name="Bob", telegram_id="222")
-        service = UserService(db_session)
+        service = UserService(logger, db_session)
 
         result = await service.create_user(data)
 
@@ -46,7 +47,7 @@ class TestUserService:
     @patch("modules.user.services.generate_api_key", return_value=(RAW_KEY, ENCRYPTED_KEY))
     async def test_create_user_without_full_name(self, mock_generate_api_key, db_session: AsyncSession):
         data = CreateUserSchema(telegram_id="333")
-        service = UserService(db_session)
+        service = UserService(logger, db_session)
 
         result = await service.create_user(data)
 
@@ -56,7 +57,7 @@ class TestUserService:
 
     async def test_create_user_already_exist(self, db_session: AsyncSession, user: User):
         data = CreateUserSchema(full_name=user.full_name, telegram_id=user.telegram_id)
-        service = UserService(db_session)
+        service = UserService(logger, db_session)
 
         with pytest.raises(UserAlreadyExistException):
             await service.create_user(data)
@@ -65,7 +66,7 @@ class TestUserService:
         self, db_session: AsyncSession, user_with_api_key: tuple[User, str]
     ):
         user, raw_key = user_with_api_key
-        service = UserService(db_session)
+        service = UserService(logger, db_session)
 
         result = await service.get_user_by_api_key(raw_key)
 
@@ -76,7 +77,7 @@ class TestUserService:
         assert result.api_key == user.api_key
 
     async def test_get_user_by_api_key_raises_when_user_not_found(self, db_session: AsyncSession):
-        service = UserService(db_session)
+        service = UserService(logger, db_session)
 
         with pytest.raises(UserNotFound):
             await service.get_user_by_api_key(self.RAW_KEY)

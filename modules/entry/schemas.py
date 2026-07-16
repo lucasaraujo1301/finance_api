@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from modules.core.schemas import BaseSchema
 from modules.core.types import Money
@@ -23,6 +23,15 @@ class EntryRequestSchema(BaseEntrySchema):
     entry_type: EntryType = EntryTypeEnum.DEBIT
     payment_date: date = Field(default_factory=date.today)
     is_fixed: bool = False
+    category: str = Field(max_length=125)
+    description: str | None = Field(default=None, max_length=255)
+
+    @field_validator("payment_date")
+    @classmethod
+    def validate_payment_date(cls, value: date) -> date:
+        if value > date.today():
+            raise ValueError("payment_date cannot be in the future")
+        return value
 
 
 class EntryResponseSchema(BaseEntrySchema):
