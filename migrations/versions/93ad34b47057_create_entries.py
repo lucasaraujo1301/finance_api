@@ -1,8 +1,8 @@
 """create entries
 
-Revision ID: bcae39b74771
+Revision ID: 93ad34b47057
 Revises: 266848a9adbf
-Create Date: 2026-07-15 11:55:06.244032
+Create Date: 2026-07-16 15:16:52.425490
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'bcae39b74771'
+revision: str = '93ad34b47057'
 down_revision: Union[str, Sequence[str], None] = '266848a9adbf'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,6 +25,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('entry_type', sa.Enum('DEBIT', 'CREDIT', name='entrytype'), nullable=False),
     sa.Column('payment_method', sa.Enum('DEBIT_CARD', 'CREDIT_CARD', 'PIX', 'CASH', name='paymentmethod'), nullable=False),
+    sa.Column('payment_date', sa.Date(), server_default=sa.text('now()'), nullable=False),
     sa.Column('amount', sa.Numeric(precision=12, scale=2), nullable=False),
     sa.Column('category', sa.String(length=125), nullable=False),
     sa.Column('description', sa.String(length=255), nullable=True),

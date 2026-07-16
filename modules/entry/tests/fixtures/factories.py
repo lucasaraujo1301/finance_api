@@ -1,3 +1,5 @@
+import datetime
+
 from decimal import Decimal
 
 from polyfactory.factories.sqlalchemy_factory import SQLAlchemyFactory
@@ -16,4 +18,5 @@ class EntryFactory(BaseFactory[Entry]):
     payment_method = PaymentMethod.CREDIT_CARD
     category = Use(SQLAlchemyFactory.__faker__.word)
     description = Use(SQLAlchemyFactory.__faker__.sentence)
+    payment_date = Use(lambda: datetime.date.today())
     is_fixed = False

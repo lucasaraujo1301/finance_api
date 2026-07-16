@@ -1,3 +1,5 @@
+import datetime
+
 from decimal import Decimal
 
 import pytest
@@ -15,12 +17,14 @@ from modules.user.tests.fixtures.factories import UserFactory
 @pytest.mark.asyncio(loop_scope="session")
 class TestEntryRepository:
     async def test_create_persists_entry_and_assigns_id(self, db_session: AsyncSession, user: User):
+        payment_date = datetime.date.today()
         repo = EntryRepository(db_session)
         entry = Entry(
             user_id=user.id,
             entry_type=EntryType.DEBIT,
             payment_method=PaymentMethod.CREDIT_CARD,
             amount=Decimal("10.50"),
+            payment_date=payment_date,
             category="food",
             description="Lunch",
             is_fixed=False,
@@ -35,6 +39,7 @@ class TestEntryRepository:
         assert result.category == "food"
         assert result.description == "Lunch"
         assert result.is_fixed is False
+        assert result.payment_date == payment_date
 
     async def test_get_by_user_id_returns_only_entries_for_user(
         self, db_session: AsyncSession, user: User, entry: Entry
