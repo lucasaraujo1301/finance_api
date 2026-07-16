@@ -6,7 +6,7 @@ import pytest
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.entry.enums import EntryType, PaymentMethod
+from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
 from modules.entry.models import Entry
 from modules.entry.repository import EntryRepository
 from modules.entry.tests.fixtures.factories import EntryFactory
@@ -21,8 +21,8 @@ class TestEntryRepository:
         repo = EntryRepository(db_session)
         entry = Entry(
             user_id=user.id,
-            entry_type=EntryType.DEBIT,
-            payment_method=PaymentMethod.CREDIT_CARD,
+            entry_type=EntryTypeEnum.DEBIT,
+            payment_method=PaymentMethodEnum.CREDIT_CARD,
             amount=Decimal("10.50"),
             payment_date=payment_date,
             category="food",
@@ -34,7 +34,7 @@ class TestEntryRepository:
 
         assert result.id is not None
         assert result.user_id == user.id
-        assert result.entry_type == EntryType.DEBIT
+        assert result.entry_type == EntryTypeEnum.DEBIT
         assert result.amount == Decimal("10.50")
         assert result.category == "food"
         assert result.description == "Lunch"

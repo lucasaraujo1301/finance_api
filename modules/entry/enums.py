@@ -1,12 +1,12 @@
 import enum
 
 
-class EntryType(enum.Enum):
+class EntryTypeEnum(enum.Enum):
     DEBIT = "debit"
     CREDIT = "credit"
 
 
-class PaymentMethod(enum.Enum):
+class PaymentMethodEnum(enum.Enum):
     DEBIT_CARD = "debit_card"
     CREDIT_CARD = "credit_card"
     PIX = "pix"
