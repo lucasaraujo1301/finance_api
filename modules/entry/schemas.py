@@ -1,9 +1,9 @@
-from datetime import date, datetime
+from datetime import date
 from uuid import UUID
 
 from pydantic import Field, field_validator
 
-from modules.core.schemas import BaseSchema
+from modules.core.schemas import BaseSchema, TimestampSchemaMixin
 from modules.core.types import Money
 from modules.entry.enums import EntryTypeEnum
 from modules.entry.types import EntryType, PaymentMethod
@@ -34,6 +34,5 @@ class EntryRequestSchema(BaseEntrySchema):
         return value
 
 
-class EntryResponseSchema(BaseEntrySchema):
+class EntrySchema(TimestampSchemaMixin, BaseEntrySchema):
     id: UUID
-    created_at: datetime

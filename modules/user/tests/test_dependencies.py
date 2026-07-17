@@ -5,13 +5,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from modules.core.logger import logger
 from modules.user.dependencies import get_current_user
 from modules.user.exceptions import ApiKeyMissing
-from modules.user.models import User
+from modules.user.models import UserModel
 from modules.user.services import UserService
 
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestUserDependencies:
-    async def test_get_current_user_returns_user(self, db_session: AsyncSession, user_with_api_key: tuple[User, str]):
+    async def test_get_current_user_returns_user(
+        self, db_session: AsyncSession, user_with_api_key: tuple[UserModel, str]
+    ):
         user, raw_key = user_with_api_key
         user_service = UserService(logger, db_session)
 

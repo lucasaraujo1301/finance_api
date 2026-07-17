@@ -1,6 +1,6 @@
 import pytest
 
-from modules.user.models import User
+from modules.user.models import UserModel
 from modules.user.repository import UserRepository
 
 
@@ -8,7 +8,7 @@ from modules.user.repository import UserRepository
 class TestUserRepository:
     async def test_create_persists_user_and_assigns_id(self, db_session):
         repo = UserRepository(db_session)
-        user = User(full_name="Alice", telegram_id="111", api_key="fin_key_1")
+        user = UserModel(full_name="Alice", telegram_id="111", api_key="fin_key_1")
 
         result = await repo.create(user)
 
@@ -19,7 +19,7 @@ class TestUserRepository:
 
     async def test_get_user_by_api_key_returns_user_when_found(self, db_session):
         repo = UserRepository(db_session)
-        user = User(full_name="Bob", telegram_id="222", api_key="fin_key_2")
+        user = UserModel(full_name="Bob", telegram_id="222", api_key="fin_key_2")
         await repo.create(user)
 
         found = await repo.get_user_by_api_key("fin_key_2")
@@ -37,7 +37,7 @@ class TestUserRepository:
 
     async def test_get_user_by_telegram_id_returns_user_when_found(self, db_session):
         repo = UserRepository(db_session)
-        user = User(full_name="Charlie", telegram_id="333", api_key="fin_key_3")
+        user = UserModel(full_name="Charlie", telegram_id="333", api_key="fin_key_3")
         await repo.create(user)
 
         found = await repo.get_user_by_telegram_id("333")

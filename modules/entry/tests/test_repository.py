@@ -7,19 +7,19 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
-from modules.entry.models import Entry
+from modules.entry.models import EntryModel
 from modules.entry.repository import EntryRepository
 from modules.entry.tests.fixtures.factories import EntryFactory
-from modules.user.models import User
+from modules.user.models import UserModel
 from modules.user.tests.fixtures.factories import UserFactory
 
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestEntryRepository:
-    async def test_create_persists_entry_and_assigns_id(self, db_session: AsyncSession, user: User):
+    async def test_create_persists_entry_and_assigns_id(self, db_session: AsyncSession, user: UserModel):
         payment_date = datetime.date.today()
         repo = EntryRepository(db_session)
-        entry = Entry(
+        entry = EntryModel(
             user_id=user.id,
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.CREDIT_CARD,
@@ -42,7 +42,7 @@ class TestEntryRepository:
         assert result.payment_date == payment_date
 
     async def test_get_by_user_id_returns_only_entries_for_user(
-        self, db_session: AsyncSession, user: User, entry: Entry
+        self, db_session: AsyncSession, user: UserModel, entry: EntryModel
     ):
         UserFactory.__async_session__ = db_session
         EntryFactory.__async_session__ = db_session
@@ -56,7 +56,7 @@ class TestEntryRepository:
         assert all(result_entry.user_id == user.id for result_entry in result)
 
     async def test_get_by_user_id_returns_empty_list_when_user_has_no_entries(
-        self, db_session: AsyncSession, user: User
+        self, db_session: AsyncSession, user: UserModel
     ):
         result = await EntryRepository(db_session).get_by_user_id(user.id)
 

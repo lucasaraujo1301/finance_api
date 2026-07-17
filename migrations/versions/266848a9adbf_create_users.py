@@ -32,6 +32,16 @@ def upgrade() -> None:
         server_default=sa.text("now()"),
         nullable=False,
     ),
+    sa.Column(
+        "updated_at",
+        sa.DateTime(timezone=True),
+        nullable=True,
+    ),
+    sa.Column(
+        "deleted_at",
+        sa.DateTime(timezone=True),
+        nullable=True,
+    ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_api_key'), 'users', ['api_key'], unique=True)

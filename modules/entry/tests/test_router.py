@@ -6,7 +6,7 @@ import pytest
 from fastapi import status
 
 from modules.entry.repository import EntryRepository
-from modules.user.models import User
+from modules.user.models import UserModel
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -36,6 +36,8 @@ class TestEntryRouter:
             "payment_date": payload["payment_date"],
             "is_fixed": False,
             "created_at": response.json()["created_at"],
+            "updated_at": None,
+            "deleted_at": None,
         }
 
         entries = await EntryRepository(db_session).get_by_user_id(user.id)
@@ -52,7 +54,7 @@ class TestEntryRouter:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.json()["error"]["message"] == "ApiKey missing from headers"
 
-    async def test_create_entry_rejects_future_payment_date(self, client, user_with_api_key: tuple[User, str]):
+    async def test_create_entry_rejects_future_payment_date(self, client, user_with_api_key: tuple[UserModel, str]):
         _, raw_api_key = user_with_api_key
 
         response = await client.post(

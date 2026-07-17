@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from modules.core.schemas import BaseSchema
+from modules.core.schemas import BaseSchema, TimestampSchemaMixin
 
 
 class CreateUserSchema(BaseSchema):
@@ -8,8 +8,11 @@ class CreateUserSchema(BaseSchema):
     telegram_id: str
 
 
-class UserSchema(BaseSchema):
+class BaseUserSchema(BaseSchema):
     id: UUID
     full_name: str | None = None
     telegram_id: str
+
+
+class UserSchema(TimestampSchemaMixin, BaseUserSchema):
     api_key: str

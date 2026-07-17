@@ -3,18 +3,13 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.entry.models import Entry
+from modules.core.repositories import BaseRepository
+from modules.entry.models import EntryModel
 
 
-class EntryRepository:
+class EntryRepository(BaseRepository[EntryModel]):
     def __init__(self, session: AsyncSession):
-        self._session = session
+        super().__init__(session, EntryModel)
 
-    async def create(self, entry: Entry) -> Entry:
-        self._session.add(entry)
-        await self._session.commit()
-        await self._session.refresh(entry)
-        return entry
-
-    async def get_by_user_id(self, user_id: UUID) -> list[Entry]:
-        return list(await self._session.scalars(select(Entry).where(Entry.user_id == user_id)))
+    async def get_by_user_id(self, user_id: UUID) -> list[EntryModel]:
+        return list(await self._session.scalars(select(EntryModel).where(EntryModel.user_id == user_id)))

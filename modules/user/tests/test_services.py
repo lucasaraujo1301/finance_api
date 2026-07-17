@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.core.logger import logger
 from modules.user.exceptions import UserAlreadyExistException, UserNotFound
-from modules.user.models import User
+from modules.user.models import UserModel
 from modules.user.schemas import CreateUserSchema
 from modules.user.services import UserService
 
@@ -38,7 +38,7 @@ class TestUserService:
 
         result = await service.create_user(data)
 
-        cursor = await db_session.execute(select(User).where(User.id == result["id"]))
+        cursor = await db_session.execute(select(UserModel).where(UserModel.id == result["id"]))
         persisted = cursor.scalars().first()
         assert persisted is not None
         assert persisted.api_key == self.ENCRYPTED_KEY
@@ -55,7 +55,7 @@ class TestUserService:
         assert result["telegram_id"] == "333"
         assert result["api_key"] == self.RAW_KEY
 
-    async def test_create_user_already_exist(self, db_session: AsyncSession, user: User):
+    async def test_create_user_already_exist(self, db_session: AsyncSession, user: UserModel):
         data = CreateUserSchema(full_name=user.full_name, telegram_id=user.telegram_id)
         service = UserService(logger, db_session)
 
@@ -63,7 +63,7 @@ class TestUserService:
             await service.create_user(data)
 
     async def test_get_user_by_api_key_returns_user(
-        self, db_session: AsyncSession, user_with_api_key: tuple[User, str]
+        self, db_session: AsyncSession, user_with_api_key: tuple[UserModel, str]
     ):
         user, raw_key = user_with_api_key
         service = UserService(logger, db_session)

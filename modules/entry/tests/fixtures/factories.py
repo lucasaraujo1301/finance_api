@@ -7,11 +7,11 @@ from polyfactory.fields import Use
 
 from modules.core.tests.fixtures import BaseFactory
 from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
-from modules.entry.models import Entry
+from modules.entry.models import EntryModel
 
 
-class EntryFactory(BaseFactory[Entry]):
-    __model__ = Entry
+class EntryFactory(BaseFactory[EntryModel]):
+    __model__ = EntryModel
 
     entry_type = EntryTypeEnum.DEBIT
     amount = Use(lambda: Decimal("10.50"))

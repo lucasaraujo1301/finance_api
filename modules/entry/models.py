@@ -5,12 +5,12 @@ from uuid import UUID
 from sqlalchemy import Boolean, Date, ForeignKey, Numeric, String, false, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from modules.core.models import Base, TimestampMixin
+from modules.core.models import Base
 from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
-from modules.user.models import User
+from modules.user.models import UserModel
 
 
-class Entry(TimestampMixin, Base):
+class EntryModel(Base):
     __tablename__ = "entries"
 
     entry_type: Mapped[EntryTypeEnum]
@@ -23,4 +23,4 @@ class Entry(TimestampMixin, Base):
 
     # FK
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    user: Mapped[User] = relationship()
+    user: Mapped[UserModel] = relationship()

@@ -32,6 +32,16 @@ def upgrade() -> None:
     sa.Column('is_fixed', sa.Boolean(), server_default=sa.text('false'), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column(
+        "updated_at",
+        sa.DateTime(timezone=True),
+        nullable=True,
+    ),
+    sa.Column(
+        "deleted_at",
+        sa.DateTime(timezone=True),
+        nullable=True,
+    ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
