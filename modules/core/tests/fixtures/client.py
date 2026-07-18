@@ -10,7 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from main import app as main_app
 from modules.core.database import get_db
 from modules.core.handlers import register_exception_handlers
-from modules.core.middlewares import ProcessTimeMiddleware
+from modules.core.i18n import _
+from modules.core.middlewares import LocaleMiddleware, ProcessTimeMiddleware
 
 
 @pytest.fixture
@@ -21,10 +22,11 @@ def test_app() -> FastAPI:
 
     register_exception_handlers(app_copy)
     app_copy.add_middleware(ProcessTimeMiddleware)
+    app_copy.add_middleware(LocaleMiddleware)
 
     @app_copy.get("/dummy")
     async def dummy_route():
-        return {"message": "I am a temporary test route"}
+        return {"message": _("Hello!")}
 
     return app_copy
 

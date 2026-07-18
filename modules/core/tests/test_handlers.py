@@ -39,7 +39,7 @@ class TestExceptionHandlers:
         async with client_factory(test_app) as client:
             response = await client.get("/dummy")
             assert response.status_code == 200
-            assert response.json() == {"message": "I am a temporary test route"}
+            assert response.json() == {"message": "Hello!"}
 
     async def test_validation_error_returns_422_with_errors(self, client_factory, test_app):
         async with client_factory(test_app) as client:

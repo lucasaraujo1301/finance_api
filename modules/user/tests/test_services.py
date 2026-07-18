@@ -59,7 +59,7 @@ class TestUserService:
         data = CreateUserSchema(full_name=user.full_name, telegram_id=user.telegram_id)
         service = UserService(logger, db_session)
 
-        with pytest.raises(UserAlreadyExistException):
+        with pytest.raises(UserAlreadyExistException, match=UserAlreadyExistException().message):
             await service.create_user(data)
 
     async def test_get_user_by_api_key_returns_user(
@@ -79,5 +79,5 @@ class TestUserService:
     async def test_get_user_by_api_key_raises_when_user_not_found(self, db_session: AsyncSession):
         service = UserService(logger, db_session)
 
-        with pytest.raises(UserNotFound):
+        with pytest.raises(UserNotFound, match=UserNotFound().message):
             await service.get_user_by_api_key(self.RAW_KEY)

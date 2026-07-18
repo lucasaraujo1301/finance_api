@@ -2,13 +2,14 @@ from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
 
 from modules.core.handlers import register_exception_handlers
-from modules.core.middlewares import ProcessTimeMiddleware
+from modules.core.middlewares import LocaleMiddleware, ProcessTimeMiddleware
 from modules.entry.router import router as entry_router
 from modules.user.router import router as user_router
 
 app = FastAPI()
 
 app.add_middleware(ProcessTimeMiddleware)
+app.add_middleware(LocaleMiddleware)
 app.add_middleware(CorrelationIdMiddleware)
 
 register_exception_handlers(app)
