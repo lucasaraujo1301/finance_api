@@ -3,13 +3,16 @@ from decimal import Decimal
 
 import pytest
 
+from fastapi_pagination import Params
+from fastapi_pagination.api import set_params
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.core.logger import logger
 from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
 from modules.entry.models import EntryModel
-from modules.entry.schemas import EntryRequestSchema
+from modules.entry.schemas import EntryFilterSchema, EntryRequestSchema
 from modules.entry.services import EntryService
+from modules.entry.tests.fixtures.factories import EntryFactory
 from modules.user.models import UserModel
 
 
@@ -41,3 +44,22 @@ class TestEntryService:
         assert result.description == "Lunch"
         assert result.payment_date == payment_date
         assert result.is_fixed is False
+
+    async def test_get_all_returns_paginated_filtered_entries(self, db_session: AsyncSession, user: UserModel):
+        EntryFactory.__async_session__ = db_session
+        matching_entry = await EntryFactory.create_async(user=user, category="food")
+        await EntryFactory.create_async(user=user, category="transport")
+        filters = EntryFilterSchema(
+            start_date=None,
+            end_date=None,
+            category="food",
+            payment_method=None,
+            entry_type=None,
+        )
+        set_params(Params(page=1, size=50))
+        service = EntryService(logger, db_session)
+
+        result = await service.get_all(user.id, filters)
+
+        assert result.total == 1
+        assert [entry.id for entry in result.items] == [matching_entry.id]

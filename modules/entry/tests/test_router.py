@@ -5,7 +5,9 @@ import pytest
 
 from fastapi import status
 
+from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
 from modules.entry.repository import EntryRepository
+from modules.entry.tests.fixtures.factories import EntryFactory
 from modules.user.models import UserModel
 
 
@@ -70,3 +72,59 @@ class TestEntryRouter:
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
         assert "payment_date cannot be in the future" in response.text
+
+    async def test_get_entries_returns_filtered_page(self, client, db_session, user_with_api_key):
+        user, raw_api_key = user_with_api_key
+        EntryFactory.__async_session__ = db_session
+        today = date.today()
+        await EntryFactory.create_async(
+            user=user,
+            payment_date=today - timedelta(days=2),
+            category="food",
+            entry_type=EntryTypeEnum.DEBIT,
+            payment_method=PaymentMethodEnum.PIX,
+        )
+        newer_entry = await EntryFactory.create_async(
+            user=user,
+            payment_date=today - timedelta(days=1),
+            category="food",
+            entry_type=EntryTypeEnum.DEBIT,
+            payment_method=PaymentMethodEnum.PIX,
+        )
+        await EntryFactory.create_async(
+            user=user,
+            payment_date=today - timedelta(days=1),
+            category="transport",
+            entry_type=EntryTypeEnum.DEBIT,
+            payment_method=PaymentMethodEnum.PIX,
+        )
+
+        response = await client.get(
+            self.base_url,
+            params={
+                "page": 1,
+                "size": 1,
+                "start_date": (today - timedelta(days=3)).isoformat(),
+                "end_date": today.isoformat(),
+                "category": "food",
+                "entry_type": "debit",
+                "payment_method": "pix",
+            },
+            headers={"X-API-KEY": raw_api_key},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["total"] == 2
+        assert response.json()["page"] == 1
+        assert response.json()["size"] == 1
+        assert response.json()["pages"] == 2
+        assert [entry["id"] for entry in response.json()["items"]] == [str(newer_entry.id)]
+
+    async def test_get_entries_accepts_no_filters(self, client, user_with_api_key):
+        _, raw_api_key = user_with_api_key
+
+        response = await client.get(self.base_url, headers={"X-API-KEY": raw_api_key})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["items"] == []
+        assert response.json()["total"] == 0

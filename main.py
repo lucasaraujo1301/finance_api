@@ -1,5 +1,6 @@
 from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
+from fastapi_pagination import add_pagination
 
 from modules.core.handlers import register_exception_handlers
 from modules.core.middlewares import LocaleMiddleware, ProcessTimeMiddleware
@@ -12,7 +13,9 @@ app.add_middleware(ProcessTimeMiddleware)
 app.add_middleware(LocaleMiddleware)
 app.add_middleware(CorrelationIdMiddleware)
 
-register_exception_handlers(app)
-
 app.include_router(user_router, prefix="/api/v1")
 app.include_router(entry_router, prefix="/api/v1")
+
+register_exception_handlers(app)
+
+add_pagination(app)

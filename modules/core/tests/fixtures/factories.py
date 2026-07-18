@@ -18,3 +18,6 @@ class BaseFactory(SQLAlchemyFactory[T]):
     __is_base_factory__ = True
     __set_relationships__ = True
     __persistence_method__ = SQLAlchemyPersistenceMethod.FLUSH
+
+    updated_at = None
+    deleted_at = None

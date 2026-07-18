@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.entry.models import EntryModel
 from modules.entry.repository import EntryRepository
-from modules.entry.schemas import EntryRequestSchema
+from modules.entry.schemas import EntryFilterSchema, EntryRequestSchema
 
 
 class EntryService:
@@ -18,3 +18,6 @@ class EntryService:
         entry = EntryModel(user_id=user_id, **data.model_dump())
 
         return await self._entry_repository.create(entry)
+
+    async def get_all(self, user_id: UUID, query_params: EntryFilterSchema):
+        return await self._entry_repository.get_all(user_id, query_params)

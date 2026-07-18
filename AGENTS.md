@@ -42,7 +42,7 @@ Responsibility of each layer:
 |---|---|---|
 | `router.py` | `schemas`, `dependencies`, `services` | SQL queries, business logic |
 | `services.py` | `repository`, `schemas`, `dependencies`, `core` | ORM/SQL details |
-| `repository.py` | `models`, `core.database` | business logic |
+| `repository.py` | `models`, `core.database`, `schemas` | business logic |
 | `schemas.py` | `core` (base types) | logic |
 | `models.py` | `core.models` (Base) | business logic |
 | `dependencies.py` | `repository`, `services`, `core` | endpoints |
