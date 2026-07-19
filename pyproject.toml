@@ -22,6 +22,8 @@ dependencies = [
 
 [project.scripts]
 start-module = "scripts.start_module:main"
+makemessages = "scripts.i18n:make_messages"
+compilemessages = "scripts.i18n:compile_messages"
 
 [build-system]
 requires = ["setuptools>=80"]

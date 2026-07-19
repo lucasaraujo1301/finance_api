@@ -5,7 +5,7 @@ from fastapi import status
 
 @pytest.mark.asyncio
 class TestLocaleMiddleware:
-    @pytest.mark.parametrize(("locate", "expected_message"), [("en", "Hello!"), ("pt-BR", "Olá!"), ("es", "¡Holá!")])
+    @pytest.mark.parametrize(("locate", "expected_message"), [("en", "Hello!"), ("pt-BR", "Olá!"), ("es", "¡Hola!")])
     async def test_locale_middleware(self, locate, expected_message, client):
         headers = {"Accept-Language": locate}
 

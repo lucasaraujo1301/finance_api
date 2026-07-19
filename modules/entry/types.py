@@ -7,7 +7,7 @@ from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
 EntryType = Annotated[
     EntryTypeEnum,
     PlainSerializer(
-        lambda value: value.value.title(),
+        lambda value: value.label,
         return_type=str,
         when_used="json",
     ),
@@ -16,7 +16,7 @@ EntryType = Annotated[
 PaymentMethod = Annotated[
     PaymentMethodEnum,
     PlainSerializer(
-        lambda value: value.value.replace("_", " ").title(),
+        lambda value: value.label,
         return_type=str,
         when_used="json",
     ),

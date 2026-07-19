@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-18 16:04-0300\n"
+"POT-Creation-Date: 2026-07-19 17:13-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,7 +18,34 @@ msgstr ""
 "Generated-By: Babel 2.18.0\n"
 
 #: modules/core/tests/fixtures/client.py:29
-#: modules/core/tests/test_translations.py:16
+#: modules/core/tests/test_translations.py:9
 msgid "Hello!"
 msgstr ""
 
+#: modules/entry/enums.py:13
+msgid "Debit"
+msgstr ""
+
+#: modules/entry/enums.py:14
+msgid "Credit"
+msgstr ""
+
+#: modules/entry/enums.py:28
+msgid "Debit Card"
+msgstr ""
+
+#: modules/entry/enums.py:29
+msgid "Credit Card"
+msgstr ""
+
+#: modules/entry/enums.py:30
+msgid "Pix"
+msgstr ""
+
+#: modules/entry/enums.py:31
+msgid "Cash"
+msgstr ""
+
+#: modules/entry/enums.py:32
+msgid "Account Transfer"
+msgstr ""

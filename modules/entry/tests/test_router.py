@@ -31,8 +31,8 @@ class TestEntryRouter:
         assert response.json() == {
             "id": str(UUID(response.json()["id"])),
             "amount": "10.50",
-            "entry_type": "Debit",
-            "payment_method": "Pix",
+            "entry_type": EntryTypeEnum.DEBIT.label,
+            "payment_method": PaymentMethodEnum.PIX.label,
             "category": "Food",
             "description": "Lunch",
             "payment_date": payload["payment_date"],

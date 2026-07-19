@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from fastapi_pagination import Page
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,4 +44,4 @@ class EntryRepository(BaseRepository[EntryModel]):
             EntryModel.id.desc(),
         )
 
-        return await paginate(self._session, statement)
+        return await apaginate(self._session, statement)
