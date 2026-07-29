@@ -1,6 +1,29 @@
-version: "3.9"
-
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        INSTALL_DEV_DEPENDENCIES: "true"
+    command: >
+      sh -c "pybabel compile --directory locales &&
+             alembic upgrade head &&
+             exec fastapi dev main.py --host 0.0.0.0 --port 8000"
+    volumes:
+      - ./main.py:/app/main.py
+      - ./modules:/app/modules
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - finance-network
+
   db:
     image: postgres:18-alpine
     volumes:
@@ -11,6 +34,14 @@ services:
       - POSTGRES_DB=devdb
       - POSTGRES_USER=devuser
       - POSTGRES_PASSWORD=changeme
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - finance-network
 
   test-db:
     image: postgres:18-alpine
@@ -22,8 +53,14 @@ services:
       - POSTGRES_DB=testdb
       - POSTGRES_USER=devuser
       - POSTGRES_PASSWORD=changeme
+    networks:
+      - finance-network
 
 
 volumes:
   dev-db-data:
   dev-test-db-data:
+
+networks:
+  finance-network:
+    driver: bridge
