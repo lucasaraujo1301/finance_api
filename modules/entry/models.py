@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import Boolean, Date, ForeignKey, Numeric, String, false, func
+from sqlalchemy import Boolean, Date, ForeignKey, Numeric, String, Uuid, false, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from modules.core.models import Base
@@ -23,4 +23,9 @@ class EntryModel(Base):
 
     # FK
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    created_by_service_account_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("service_accounts.id"),
+        nullable=True,
+    )
     user: Mapped[UserModel] = relationship()

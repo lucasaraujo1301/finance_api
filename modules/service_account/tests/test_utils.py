@@ -1,4 +1,4 @@
-from modules.user.utils import generate_api_key, verify_api_key
+from modules.service_account.utils import generate_api_key, verify_api_key
 
 
 def test_generate_api_key_returns_tuple_of_two_strings():

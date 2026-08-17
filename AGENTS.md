@@ -108,11 +108,8 @@ or into a one-directional interface instead.
 
 ## 6. When generating code, the agent should
 
-1. Locate the module corresponding to the task's domain; if it doesn't
-   exist, create it following sections 2 and 3.
-2. Place each piece of code in the file for the correct layer (table in
-   section 2).
-3. Mentally run the check from section 4 before adding any import between
-   feature modules.
+1. Locate the module corresponding to the task's domain; if it doesn't exist, create it following sections 2 and 3.
+2. Place each piece of code in the file for the correct layer (table in section 2).
+3. Mentally run the check from section 4 before adding any import between feature modules.
 4. Keep `main.py` as the single place that knows about all routers.
 5. Never edit files inside `migrations/` manually.

@@ -15,4 +15,4 @@ class BaseUserSchema(BaseSchema):
 
 
 class UserSchema(TimestampSchemaMixin, BaseUserSchema):
-    api_key: str
+    pass

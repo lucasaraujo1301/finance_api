@@ -9,8 +9,11 @@ class TestUserRouter:
 
     async def test_create_user_persists_in_database(self, client):
         response = await client.post(self.base_url, json={"full_name": "alice", "telegram_id": "111"})
+
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.json()["api_key"].startswith("fin_")
+        assert response.json()["full_name"] == "alice"
+        assert response.json()["telegram_id"] == "111"
+        assert "api_key" not in response.json()
 
     async def test_create_duplicate_telegram_id_returns_400(self, client, user):
         response = await client.post(self.base_url, json={"full_name": "Test API", "telegram_id": user.telegram_id})

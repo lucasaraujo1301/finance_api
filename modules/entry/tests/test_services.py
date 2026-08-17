@@ -10,9 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from modules.core.logger import logger
 from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
 from modules.entry.models import EntryModel
-from modules.entry.schemas import EntryFilterSchema, EntryRequestSchema
+from modules.entry.schemas import EntryFilterSchema, EntryRequestSchema, TelegramEntryRequestSchema
 from modules.entry.services import EntryService
 from modules.entry.tests.fixtures.factories import EntryFactory
+from modules.service_account.models import ServiceAccountModel
+from modules.user.exceptions import UserNotFound
 from modules.user.models import UserModel
 
 
@@ -44,6 +46,41 @@ class TestEntryService:
         assert result.description == "Lunch"
         assert result.payment_date == payment_date
         assert result.is_fixed is False
+
+    async def test_create_from_telegram_validates_user_and_delegates_creation(
+        self,
+        db_session: AsyncSession,
+        user: UserModel,
+        service_account: ServiceAccountModel,
+    ):
+        data = TelegramEntryRequestSchema(
+            telegram_id=user.telegram_id,
+            amount=Decimal("10.50"),
+            payment_method=PaymentMethodEnum.PIX,
+            category="food",
+        )
+        service = EntryService(logger, db_session)
+
+        result = await service.create_from_telegram(data, service_account.id)
+
+        assert result.user_id == user.id
+        assert result.created_by_service_account_id == service_account.id
+
+    async def test_create_from_telegram_rejects_unknown_user(
+        self,
+        db_session: AsyncSession,
+        service_account: ServiceAccountModel,
+    ):
+        data = TelegramEntryRequestSchema(
+            telegram_id="unknown",
+            amount=Decimal("10.50"),
+            payment_method=PaymentMethodEnum.PIX,
+            category="food",
+        )
+        service = EntryService(logger, db_session)
+
+        with pytest.raises(UserNotFound):
+            await service.create_from_telegram(data, service_account.id)
 
     async def test_get_all_returns_paginated_filtered_entries(self, db_session: AsyncSession, user: UserModel):
         EntryFactory.__async_session__ = db_session

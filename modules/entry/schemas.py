@@ -34,6 +34,10 @@ class EntryRequestSchema(BaseEntrySchema):
         return value
 
 
+class TelegramEntryRequestSchema(EntryRequestSchema):
+    telegram_id: str
+
+
 class EntrySchema(TimestampSchemaMixin, BaseEntrySchema):
     id: UUID
 
