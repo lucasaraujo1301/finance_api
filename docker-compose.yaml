@@ -12,6 +12,7 @@ services:
     volumes:
       - ./main.py:/app/main.py
       - ./modules:/app/modules
+      - ./migrations:/app/migrations
     ports:
       - "8000:8000"
     env_file:
