@@ -10,7 +10,7 @@ LOG_LEVELS = {
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", frozen=True)
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", frozen=True, extra="ignore")
 
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = Field(

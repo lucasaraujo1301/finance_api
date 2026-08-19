@@ -5,6 +5,7 @@ import pytest
 
 from fastapi_pagination import Params
 from fastapi_pagination.api import set_params
+from pwdlib import PasswordHash
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.core.logger import logger
@@ -16,10 +17,15 @@ from modules.entry.tests.fixtures.factories import EntryFactory
 from modules.service_account.models import ServiceAccountModel
 from modules.user.exceptions import UserNotFound
 from modules.user.models import UserModel
+from modules.user.services import UserService
 
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestEntryService:
+    def _get_service(self, db_session: AsyncSession) -> EntryService:
+        user_service = UserService(logger, db_session, PasswordHash.recommended())
+        return EntryService(logger, db_session, user_service)
+
     async def test_create_persists_and_returns_entry(self, db_session: AsyncSession, user: UserModel):
         payment_date = date.today()
         data = EntryRequestSchema(
@@ -31,7 +37,7 @@ class TestEntryService:
             payment_date=payment_date,
             is_fixed=False,
         )
-        service = EntryService(logger, db_session)
+        service = self._get_service(db_session)
 
         result = await service.create(user.id, data)
 
@@ -59,7 +65,7 @@ class TestEntryService:
             payment_method=PaymentMethodEnum.PIX,
             category="food",
         )
-        service = EntryService(logger, db_session)
+        service = self._get_service(db_session)
 
         result = await service.create_from_telegram(data, service_account.id)
 
@@ -77,7 +83,7 @@ class TestEntryService:
             payment_method=PaymentMethodEnum.PIX,
             category="food",
         )
-        service = EntryService(logger, db_session)
+        service = self._get_service(db_session)
 
         with pytest.raises(UserNotFound):
             await service.create_from_telegram(data, service_account.id)
@@ -94,7 +100,7 @@ class TestEntryService:
             entry_type=None,
         )
         set_params(Params(page=1, size=50))
-        service = EntryService(logger, db_session)
+        service = self._get_service(db_session)
 
         result = await service.get_all(user.id, filters)
 

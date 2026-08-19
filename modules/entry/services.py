@@ -10,10 +10,10 @@ from modules.user.services import UserService
 
 
 class EntryService:
-    def __init__(self, logger: Logger, db_session: AsyncSession):
+    def __init__(self, logger: Logger, db_session: AsyncSession, user_service: UserService):
         self.logger = logger
         self._entry_repository = EntryRepository(db_session)
-        self._user_service = UserService(logger, db_session)
+        self._user_service = user_service
 
     async def create(
         self,

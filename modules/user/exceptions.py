@@ -23,3 +23,15 @@ class ApiKeyMissing(UserExceptions):
     code = 3
     message = "ApiKey missing from headers"
     status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class InvalidCredentials(UserExceptions):
+    code = 4
+    message = "Invalid credentials."
+    status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class InvalidRefreshToken(UserExceptions):
+    code = 5
+    message = "Invalid refresh token."
+    status_code = status.HTTP_401_UNAUTHORIZED

@@ -25,6 +25,7 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('full_name', sa.String(length=255), nullable=True),
     sa.Column('telegram_id', sa.String(), nullable=False),
+    sa.Column('password', sa.String(length=255), nullable=False),
     sa.Column('is_superuser', sa.Boolean(), nullable=False, default=False),
     sa.Column(
         "created_at",

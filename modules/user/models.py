@@ -9,4 +9,5 @@ class UserModel(Base):
 
     full_name: Mapped[str] = mapped_column(String(length=255), nullable=True)
     telegram_id: Mapped[str] = mapped_column(unique=True, index=True)
+    password: Mapped[str] = mapped_column(String(length=255))
     is_superuser: Mapped[bool] = mapped_column(default=False)
