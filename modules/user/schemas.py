@@ -35,3 +35,4 @@ class TokenSchema(BaseSchema):
 
 class UserSchema(TimestampSchemaMixin, BaseUserSchema):
     id: UUID
+    is_superuser: bool

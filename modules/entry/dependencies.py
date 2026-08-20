@@ -1,17 +1,18 @@
 from typing import Annotated
 
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.core.database import get_db
+from modules.core.database import AsyncDbDep
 from modules.core.logger import logger
 from modules.entry.services import EntryService
-from modules.user.dependencies import get_user_service
-from modules.user.services import UserService
+from modules.user.dependencies import UserServiceDep
 
 
 def get_entry_service(
-    db_session: Annotated[AsyncSession, Depends(get_db)],
-    user_service: Annotated[UserService, Depends(get_user_service)],
+    db_session: AsyncDbDep,
+    user_service: UserServiceDep,
 ) -> EntryService:
     return EntryService(logger, db_session, user_service)
+
+
+EntryServiceDep = Annotated[EntryService, Depends(get_entry_service)]

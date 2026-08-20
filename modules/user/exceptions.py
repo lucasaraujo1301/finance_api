@@ -35,3 +35,9 @@ class InvalidRefreshToken(UserExceptions):
     code = 5
     message = "Invalid refresh token."
     status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class SuperuserRequired(UserExceptions):
+    code = 6
+    message = "Superuser access required."
+    status_code = status.HTTP_403_FORBIDDEN

@@ -11,3 +11,4 @@ class UserFactory(BaseFactory[UserModel]):
     full_name = Use(SQLAlchemyFactory.__faker__.name)
     telegram_id = Use(lambda: str(SQLAlchemyFactory.__faker__.unique.random_number(digits=4)))
     password = Use(lambda: "$argon2id$fixture-password-hash")
+    is_superuser = False

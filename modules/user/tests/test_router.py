@@ -2,14 +2,20 @@ import pytest
 
 from fastapi import status
 
+from modules.service_account.exceptions import ApiKeyMissing
+from modules.user.exceptions import SuperuserRequired, UserAlreadyExistException
+from modules.user.tests.mixin import AuthRequestMixin
+
 
 @pytest.mark.asyncio(loop_scope="session")
-class TestUserRouter:
-    base_url = "/api/v1/users/"
+class TestUserRouter(AuthRequestMixin):
+    base_url = "/api/v1/users"
 
-    async def test_create_user_persists_in_database(self, client):
-        response = await client.post(
-            self.base_url,
+    async def test_create_user_persists_in_database(self, client, admin_user):
+        response = await self.auth_post(
+            client,
+            admin_user,
+            path="/",
             json={"full_name": "alice", "telegram_id": "111", "password": "secret-password"},
         )
 
@@ -18,18 +24,35 @@ class TestUserRouter:
         assert response.json()["telegram_id"] == "111"
         assert "password" not in response.json()
 
-    async def test_create_duplicate_telegram_id_returns_400(self, client, user):
-        response = await client.post(
-            self.base_url,
+    async def test_create_duplicate_telegram_id_returns_400(self, client, admin_user, user):
+        response = await self.auth_post(
+            client,
+            admin_user,
+            path="/",
             json={"full_name": "Test API", "telegram_id": user.telegram_id, "password": "secret-password"},
         )
         assert response.status_code == status.HTTP_409_CONFLICT
+        assert response.json()["success"] is False
+        assert response.json()["error"]["message"] == UserAlreadyExistException.message
+
+    async def test_create_user_requires_superuser(self, client, user):
+        response = await self.auth_post(
+            client,
+            user,
+            path="/",
+            json={"full_name": "alice", "telegram_id": "111", "password": "secret-password"},
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.json()["success"] is False
+        assert response.json()["error"]["message"] == SuperuserRequired.message
 
     async def test_create_telegram_user_with_service_account(self, client, service_account_with_api_key):
         _, raw_key = service_account_with_api_key
 
-        response = await client.post(
-            f"{self.base_url}telegram/",
+        response = await self.auth_post(
+            client,
+            path="/telegram",
             headers={"X-API-KEY": raw_key},
             json={"full_name": "Telegram User", "telegram_id": "222"},
         )
@@ -40,12 +63,16 @@ class TestUserRouter:
         assert "password" not in response.json()
 
     async def test_create_telegram_user_requires_service_account(self, client):
-        response = await client.post(
-            f"{self.base_url}telegram/",
+        response = await self.auth_post(
+            client,
+            path="/telegram",
+            headers=None,
             json={"full_name": "Telegram User", "telegram_id": "222"},
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.json()["success"] is False
+        assert response.json()["error"]["message"] == ApiKeyMissing.message
 
 
 @pytest.mark.asyncio(loop_scope="session")

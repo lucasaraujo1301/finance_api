@@ -15,6 +15,13 @@ async def user(db_session: AsyncSession) -> UserModel:
 
 
 @pytest_asyncio.fixture(scope="function")
+async def admin_user(db_session: AsyncSession) -> UserModel:
+    UserFactory.__async_session__ = db_session
+
+    return await UserFactory.create_async(is_superuser=True)
+
+
+@pytest_asyncio.fixture(scope="function")
 async def user_with_password(db_session: AsyncSession) -> tuple[UserModel, str]:
     password = "secret-password"
     UserFactory.__async_session__ = db_session

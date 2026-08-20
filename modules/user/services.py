@@ -12,6 +12,7 @@ from modules.user.exceptions import InvalidCredentials, InvalidRefreshToken, Use
 from modules.user.models import UserModel
 from modules.user.repository import UserRepository
 from modules.user.schemas import CreateUserSchema, LoginSchema, TelegramUserCreateSchema, TokenSchema, UserSchema
+from modules.user.tokens import create_access_token
 
 
 class UserService:
@@ -96,11 +97,7 @@ class AuthService:
 
     def _create_token_response(self, user: UserModel) -> TokenSchema:
         return TokenSchema(
-            access_token=self._create_token(
-                user,
-                "access",
-                timedelta(minutes=self._settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
-            ),
+            access_token=create_access_token(user, self._settings),
             refresh_token=self._create_token(
                 user,
                 "refresh",

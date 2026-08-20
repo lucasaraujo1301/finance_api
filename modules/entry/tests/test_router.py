@@ -8,14 +8,15 @@ from fastapi import status
 from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
 from modules.entry.repository import EntryRepository
 from modules.entry.tests.fixtures.factories import EntryFactory
+from modules.user.exceptions import InvalidCredentials
+from modules.user.tests.mixin import AuthRequestMixin
 
 
 @pytest.mark.asyncio(loop_scope="session")
-class TestEntryRouter:
-    base_url = "/api/v1/entries/"
+class TestEntryRouter(AuthRequestMixin):
+    base_url = "/api/v1/entries"
 
-    async def test_create_entry_persists_entry_for_configured_user(self, client, db_session, user, monkeypatch):
-        monkeypatch.setattr("modules.entry.router.HARDCODED_USER_ID", user.id)
+    async def test_create_entry_persists_entry_for_configured_user(self, client, db_session, user):
         payload = {
             "amount": "10.50",
             "payment_method": "pix",
@@ -24,7 +25,12 @@ class TestEntryRouter:
             "payment_date": date.today().isoformat(),
         }
 
-        response = await client.post(self.base_url, json=payload)
+        response = await self.auth_post(
+            client,
+            user,
+            path="/",
+            json=payload
+        )
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json() == {
@@ -46,9 +52,11 @@ class TestEntryRouter:
         assert entries[0].id == UUID(response.json()["id"])
         assert entries[0].user_id == user.id
 
-    async def test_create_entry_rejects_future_payment_date(self, client):
-        response = await client.post(
-            self.base_url,
+    async def test_create_entry_rejects_future_payment_date(self, client, user):
+        response = await self.auth_post(
+            client,
+            user,
+            path="/",
             json={
                 "amount": "10.50",
                 "payment_method": "pix",
@@ -58,7 +66,25 @@ class TestEntryRouter:
         )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
-        assert "payment_date cannot be in the future" in response.text
+        assert response.json()["success"] is False
+        assert response.json()["error"][0]["msg"] == "Value error, payment_date cannot be in the future"
+
+    async def test_create_entry_requires_jwt(self, client):
+        response = await self.auth_post(
+            client,
+            path="/",
+            headers=None,
+            json={
+                "amount": "10.50",
+                "payment_method": "pix",
+                "category": "Food",
+                "payment_date": date.today().isoformat(),
+            },
+        )
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.json()["success"] is False
+        assert response.json()["error"]["message"] == InvalidCredentials.message
 
     async def test_create_from_telegram_persists_entry_for_authenticated_service_account(
         self,
@@ -77,8 +103,9 @@ class TestEntryRouter:
             "payment_date": date.today().isoformat(),
         }
 
-        response = await client.post(
-            f"{self.base_url}telegram",
+        response = await self.auth_post(
+            client,
+            path="/telegram",
             json=payload,
             headers={"X-API-KEY": api_key},
         )
@@ -104,8 +131,7 @@ class TestEntryRouter:
         assert entries[0].user_id == user.id
         assert entries[0].created_by_service_account_id == service_account.id
 
-    async def test_get_entries_returns_filtered_page(self, client, db_session, user, monkeypatch):
-        monkeypatch.setattr("modules.entry.router.HARDCODED_USER_ID", user.id)
+    async def test_get_entries_returns_filtered_page(self, client, db_session, user):
         EntryFactory.__async_session__ = db_session
         today = date.today()
         await EntryFactory.create_async(
@@ -130,8 +156,10 @@ class TestEntryRouter:
             payment_method=PaymentMethodEnum.PIX,
         )
 
-        response = await client.get(
-            self.base_url,
+        response = await self.auth_get(
+            client,
+            user,
+            path="/",
             params={
                 "page": 1,
                 "size": 1,
@@ -150,10 +178,12 @@ class TestEntryRouter:
         assert response.json()["pages"] == 2
         assert [entry["id"] for entry in response.json()["items"]] == [str(newer_entry.id)]
 
-    async def test_get_entries_accepts_no_filters(self, client, user, monkeypatch):
-        monkeypatch.setattr("modules.entry.router.HARDCODED_USER_ID", user.id)
-
-        response = await client.get(self.base_url)
+    async def test_get_entries_accepts_no_filters(self, client, user):
+        response = await self.auth_get(
+            client,
+            user,
+            path="/",
+        )
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["items"] == []
