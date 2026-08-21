@@ -8,10 +8,21 @@ from pwdlib import PasswordHash
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.user.config import UserSettings
-from modules.user.exceptions import InvalidCredentials, InvalidRefreshToken, UserAlreadyExistException, UserNotFound
+from modules.user.exceptions import (
+    InvalidCredentials,
+    InvalidRefreshToken,
+    UserAlreadyExistException,
+    UserNotFound,
+)
 from modules.user.models import UserModel
 from modules.user.repository import UserRepository
-from modules.user.schemas import CreateUserSchema, LoginSchema, TelegramUserCreateSchema, TokenSchema, UserSchema
+from modules.user.schemas import (
+    CreateUserSchema,
+    LoginSchema,
+    TelegramUserCreateSchema,
+    TokenSchema,
+    UserSchema,
+)
 from modules.user.tokens import create_access_token
 
 
@@ -90,7 +101,7 @@ class AuthService:
             if payload.get("type") != "refresh":
                 raise InvalidRefreshToken()
             user = await self._user_service.get_by_id(payload["sub"])
-        except (jwt.InvalidTokenError, KeyError, UserNotFound):
+        except jwt.InvalidTokenError, KeyError, UserNotFound:
             raise InvalidRefreshToken() from None
 
         return self._create_token_response(user)

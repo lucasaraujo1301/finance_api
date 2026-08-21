@@ -25,12 +25,7 @@ class TestEntryRouter(AuthRequestMixin):
             "payment_date": date.today().isoformat(),
         }
 
-        response = await self.auth_post(
-            client,
-            user,
-            path="/",
-            json=payload
-        )
+        response = await self.auth_post(client, user, path="/", json=payload)
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json()["success"] is True

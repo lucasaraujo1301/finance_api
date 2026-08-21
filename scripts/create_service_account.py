@@ -15,10 +15,7 @@ async def create_service_account(name: str) -> None:
             service_account = await service.create(CreateServiceAccountSchema(name=name))
             await session.commit()
 
-        sys.stdout.write(
-            f"Service account: {service_account.name}\n"
-            f"API key: {service_account.api_key}\n"
-        )
+        sys.stdout.write(f"Service account: {service_account.name}\nAPI key: {service_account.api_key}\n")
     finally:
         await engine.dispose()
 
