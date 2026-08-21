@@ -21,10 +21,10 @@ class BaseException(HTTPException):
 
         super().__init__(status_code=self.status_code, detail=self.message)
 
-    def _get_error_code(self):
+    def _get_error_code(self) -> str:
         return f"{self._get_module_code()}{self.code:03d}"
 
-    def _get_module_code(self):
+    def _get_module_code(self) -> int:
         if not isinstance(self.module, Modules):
             raise Exception("Wrong module configuration")
 
@@ -34,3 +34,10 @@ class BaseException(HTTPException):
 class SystemException(BaseException):
     module = Modules.system
     code = 1
+
+
+class ValidationException(BaseException):
+    module = Modules.system
+    code = 2
+    message = "Validation error."
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT

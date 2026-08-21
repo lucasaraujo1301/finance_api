@@ -3,7 +3,7 @@ import pytest
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError
 
-from modules.core.expcetion import BaseException, Modules, SystemException
+from modules.core.expcetion import BaseException, Modules, SystemException, ValidationException
 from modules.core.handlers import register_exception_handlers
 
 
@@ -45,15 +45,29 @@ class TestExceptionHandlers:
         async with client_factory(test_app) as client:
             response = await client.get("/validation_error")
             assert response.status_code == 422
-            body = response.json()
-            assert body["success"] is False
-            assert isinstance(body["error"], list)
+            assert response.json() == {
+                "success": False,
+                "data": None,
+                "errors": {
+                    "code": ValidationException().error_code,
+                    "message": ValidationException.message,
+                    "detail": [{"loc": "x", "msg": "field required", "type": "value_error.missing"}],
+                },
+            }
 
     async def test_integrity_error_returns_409(self, client_factory, test_app):
         async with client_factory(test_app) as client:
             response = await client.get("/integrity_error")
             assert response.status_code == 409
-            assert response.json() == {"success": False, "error": "Integrity error occurred"}
+            assert response.json() == {
+                "success": False,
+                "data": None,
+                "errors": {
+                    "code": SystemException().error_code,
+                    "message": SystemException.message,
+                    "detail": None,
+                },
+            }
 
     async def test_unhandled_exception_returns_500(self, client_factory, test_app):
         async with client_factory(test_app, raise_server_exceptions=False) as client:
@@ -61,11 +75,24 @@ class TestExceptionHandlers:
             assert response.status_code == 500
             assert response.json() == {
                 "success": False,
-                "error": {"code": SystemException().error_code, "message": SystemException.message},
+                "data": None,
+                "errors": {
+                    "code": SystemException().error_code,
+                    "message": SystemException.message,
+                    "detail": None,
+                },
             }
 
     async def test_base_exception_handler(self, client_factory, test_app):
-        expect = {"success": False, "error": {"code": SomeException().error_code, "message": SomeException.message}}
+        expect = {
+            "success": False,
+            "data": None,
+            "errors": {
+                "code": SomeException().error_code,
+                "message": SomeException.message,
+                "detail": None,
+            },
+        }
         async with client_factory(test_app, raise_server_exceptions=False) as client:
             response = await client.get("/base_exception")
             assert response.status_code == SomeException.status_code

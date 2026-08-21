@@ -33,8 +33,9 @@ class TestEntryRouter(AuthRequestMixin):
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.json() == {
-            "id": str(UUID(response.json()["id"])),
+        assert response.json()["success"] is True
+        assert response.json()["data"] == {
+            "id": str(UUID(response.json()["data"]["id"])),
             "amount": "10.50",
             "entry_type": EntryTypeEnum.DEBIT.label,
             "payment_method": PaymentMethodEnum.PIX.label,
@@ -42,14 +43,14 @@ class TestEntryRouter(AuthRequestMixin):
             "description": "Lunch",
             "payment_date": payload["payment_date"],
             "is_fixed": False,
-            "created_at": response.json()["created_at"],
+            "created_at": response.json()["data"]["created_at"],
             "updated_at": None,
             "deleted_at": None,
         }
 
         entries = await EntryRepository(db_session).get_by_user_id(user.id)
         assert len(entries) == 1
-        assert entries[0].id == UUID(response.json()["id"])
+        assert entries[0].id == UUID(response.json()["data"]["id"])
         assert entries[0].user_id == user.id
 
     async def test_create_entry_rejects_future_payment_date(self, client, user):
@@ -64,10 +65,15 @@ class TestEntryRouter(AuthRequestMixin):
                 "payment_date": (date.today() + timedelta(days=1)).isoformat(),
             },
         )
-
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
         assert response.json()["success"] is False
-        assert response.json()["error"][0]["msg"] == "Value error, payment_date cannot be in the future"
+        assert response.json()["errors"]["detail"] == [
+            {
+                "loc": "payment_date",
+                "msg": "Value error, payment_date cannot be in the future",
+                "type": "value_error",
+            }
+        ]
 
     async def test_create_entry_requires_jwt(self, client):
         response = await self.auth_post(
@@ -84,7 +90,7 @@ class TestEntryRouter(AuthRequestMixin):
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.json()["success"] is False
-        assert response.json()["error"]["message"] == InvalidCredentials.message
+        assert response.json()["errors"]["message"] == InvalidCredentials.message
 
     async def test_create_from_telegram_persists_entry_for_authenticated_service_account(
         self,
@@ -111,8 +117,9 @@ class TestEntryRouter(AuthRequestMixin):
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.json() == {
-            "id": str(UUID(response.json()["id"])),
+        assert response.json()["success"] is True
+        assert response.json()["data"] == {
+            "id": str(UUID(response.json()["data"]["id"])),
             "amount": "10.50",
             "entry_type": EntryTypeEnum.DEBIT.label,
             "payment_method": PaymentMethodEnum.PIX.label,
@@ -120,14 +127,14 @@ class TestEntryRouter(AuthRequestMixin):
             "description": "Lunch",
             "payment_date": payload["payment_date"],
             "is_fixed": False,
-            "created_at": response.json()["created_at"],
+            "created_at": response.json()["data"]["created_at"],
             "updated_at": None,
             "deleted_at": None,
         }
 
         entries = await EntryRepository(db_session).get_by_user_id(user.id)
         assert len(entries) == 1
-        assert entries[0].id == UUID(response.json()["id"])
+        assert entries[0].id == UUID(response.json()["data"]["id"])
         assert entries[0].user_id == user.id
         assert entries[0].created_by_service_account_id == service_account.id
 
