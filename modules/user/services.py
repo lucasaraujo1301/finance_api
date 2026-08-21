@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from logging import Logger
 from secrets import token_urlsafe
-from uuid import UUID
 
 import jwt
 

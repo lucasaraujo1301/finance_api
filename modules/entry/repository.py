@@ -120,8 +120,7 @@ class EntryRepository(BaseRepository[EntryModel]):
                 additional_data["balance"] = first_row.balance
                 if query_params.entry_type is None:
                     additional_data["by_entry_type"] = {
-                        entry_type: getattr(first_row, f"entry_type_{entry_type.value}")
-                        for entry_type in EntryTypeEnum
+                        entry_type: getattr(first_row, f"entry_type_{entry_type.value}") for entry_type in EntryTypeEnum
                     }
                 if query_params.payment_method is None:
                     additional_data["by_payment_method"] = {
