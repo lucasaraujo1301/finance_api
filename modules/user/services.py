@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from logging import Logger
 from secrets import token_urlsafe
+from uuid import UUID
 
 import jwt
 
@@ -19,6 +20,7 @@ from modules.user.repository import UserRepository
 from modules.user.schemas import (
     CreateUserSchema,
     LoginSchema,
+    PatchUserSchema,
     TelegramUserCreateSchema,
     TokenSchema,
     UserSchema,
@@ -70,6 +72,15 @@ class UserService:
             raise UserNotFound()
 
         return user
+
+    async def update_user(self, user: UserModel, data: PatchUserSchema) -> UserModel:
+        if data.full_name:
+            user.full_name = data.full_name
+
+        if data.password:
+            user.password = self._password_hash.hash(data.password)
+
+        return await self._repository.update(user)
 
 
 class AuthService:

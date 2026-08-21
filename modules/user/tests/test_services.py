@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from modules.core.logger import logger
 from modules.user.exceptions import UserAlreadyExistException, UserNotFound
 from modules.user.models import UserModel
-from modules.user.schemas import CreateUserSchema, TelegramUserCreateSchema
+from modules.user.schemas import CreateUserSchema, PatchUserSchema, TelegramUserCreateSchema
 from modules.user.services import UserService
 
 
@@ -85,3 +85,28 @@ class TestUserService:
 
         with pytest.raises(UserNotFound, match=UserNotFound().message):
             await service.get_by_telegram_id("missing")
+
+    async def test_update_user_persists_full_name(self, db_session: AsyncSession, user: UserModel):
+        service = self._get_service(db_session)
+
+        result = await service.update_user(user, PatchUserSchema(full_name="Updated Name"))
+
+        persisted = await db_session.get(UserModel, user.id)
+        assert result.full_name == "Updated Name"
+        assert persisted is not None
+        assert persisted.full_name == "Updated Name"
+
+    async def test_update_user_hashes_password_and_preserves_omitted_name(
+        self,
+        db_session: AsyncSession,
+        user: UserModel,
+    ):
+        password_hash = PasswordHash.recommended()
+        service = self._get_service(db_session, password_hash)
+        original_name = user.full_name
+
+        result = await service.update_user(user, PatchUserSchema(password="new-secret-password"))
+
+        assert result.full_name == original_name
+        assert result.password != "new-secret-password"
+        assert password_hash.verify("new-secret-password", result.password)

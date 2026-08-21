@@ -83,6 +83,26 @@ class TestUserRouter(AuthRequestMixin):
         assert response.json()["success"] is True
         assert response.json()["data"]["id"] == str(user.id)
 
+    async def test_update_me(self, client, user):
+        response = await self.auth_patch(
+            client,
+            user,
+            path="/me",
+            json={"full_name": "Updated Name", "password": "new-secret-password"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["success"] is True
+        assert response.json()["data"]["id"] == str(user.id)
+        assert response.json()["data"]["full_name"] == "Updated Name"
+        assert user.full_name == "Updated Name"
+        assert user.password != "new-secret-password"
+
+    async def test_update_me_requires_authentication(self, client):
+        response = await client.patch(f"{self.base_url}/me", json={"full_name": "Updated Name"})
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestAuthRouter:

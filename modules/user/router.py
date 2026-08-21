@@ -6,6 +6,7 @@ from modules.user.dependencies import AuthServiceDep, CurrentUser, Superuser, Us
 from modules.user.schemas import (
     CreateUserSchema,
     LoginSchema,
+    PatchUserSchema,
     RefreshTokenSchema,
     TelegramUserCreateSchema,
     TokenSchema,
@@ -46,3 +47,12 @@ async def me(
     user: CurrentUser,
 ):
     return ApiResponse(data=await user_service.get_by_id(user.id))
+
+
+@router.patch("/me", status_code=status.HTTP_200_OK, response_model=ApiResponse[UserSchema])
+async def update_me(
+    data: PatchUserSchema,
+    user_service: UserServiceDep,
+    user: CurrentUser,
+):
+    return ApiResponse(data=await user_service.update_user(user, data))

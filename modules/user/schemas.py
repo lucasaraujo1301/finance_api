@@ -36,3 +36,8 @@ class TokenSchema(BaseSchema):
 class UserSchema(TimestampSchemaMixin, BaseUserSchema):
     id: UUID
     is_superuser: bool
+
+
+class PatchUserSchema(BaseSchema):
+    password: str | None = None
+    full_name: str | None = None

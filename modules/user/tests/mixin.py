@@ -50,3 +50,12 @@ class AuthRequestMixin:
         **kwargs: Any,
     ) -> Response:
         return await self.auth_request(client, user, "POST", path, **kwargs)
+
+    async def auth_patch(
+        self,
+        client: AsyncClient,
+        user: UserModel | None = None,
+        path: str | None = None,
+        **kwargs: Any,
+    ) -> Response:
+        return await self.auth_request(client, user, "PATCH", path, **kwargs)
