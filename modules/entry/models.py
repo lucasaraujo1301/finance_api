@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import Boolean, Date, ForeignKey, Numeric, String, Uuid, false, func
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, Numeric, String, Uuid, false, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from modules.core.models import Base
@@ -13,8 +13,12 @@ from modules.user.models import UserModel
 class EntryModel(Base):
     __tablename__ = "entries"
 
-    entry_type: Mapped[EntryTypeEnum]
-    payment_method: Mapped[PaymentMethodEnum]
+    entry_type: Mapped[EntryTypeEnum] = mapped_column(
+        Enum(EntryTypeEnum, values_callable=EntryTypeEnum.values, name="entrytype")
+    )
+    payment_method: Mapped[PaymentMethodEnum] = mapped_column(
+        Enum(PaymentMethodEnum, values_callable=PaymentMethodEnum.values, name="paymentmethod")
+    )
     payment_date: Mapped[date] = mapped_column(Date, nullable=False, server_default=func.now())
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     category: Mapped[str] = mapped_column(String(length=125), nullable=False)

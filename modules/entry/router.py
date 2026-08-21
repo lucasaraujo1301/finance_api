@@ -1,12 +1,12 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Query, status
-from fastapi_pagination import Page
 
 from modules.core.schemas import ApiResponse
 from modules.entry.dependencies import EntryServiceDep
 from modules.entry.schemas import (
     EntryFilterSchema,
+    EntryPage,
     EntryRequestSchema,
     EntrySchema,
     TelegramEntryRequestSchema,
@@ -22,7 +22,7 @@ async def create_entry(data: EntryRequestSchema, entry_service: EntryServiceDep,
     return ApiResponse(data=await entry_service.create(user_id=user.id, data=data))
 
 
-@router.get("/", response_model=Page[EntrySchema])
+@router.get("/", response_model=EntryPage)
 async def get_entries(
     entry_service: EntryServiceDep, query_params: Annotated[EntryFilterSchema, Query()], user: CurrentUser
 ):

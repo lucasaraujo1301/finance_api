@@ -1,9 +1,8 @@
-import enum
-
+from modules.core.enums import ValueEnum
 from modules.core.i18n import _
 
 
-class EntryTypeEnum(enum.Enum):
+class EntryTypeEnum(ValueEnum):
     DEBIT = "debit"
     CREDIT = "credit"
 
@@ -15,7 +14,7 @@ class EntryTypeEnum(enum.Enum):
         }[self]
 
 
-class PaymentMethodEnum(enum.Enum):
+class PaymentMethodEnum(ValueEnum):
     DEBIT_CARD = "debit_card"
     CREDIT_CARD = "credit_card"
     PIX = "pix"

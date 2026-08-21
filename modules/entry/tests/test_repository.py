@@ -137,3 +137,90 @@ class TestEntryRepository:
 
         assert result.total == 1
         assert [entry.id for entry in result.items] == [matching_entry.id]
+        assert result.by_entry_type is None
+        assert result.by_payment_method is None
+
+    async def test_get_all_returns_analytics_for_unfiltered_dimensions(
+        self,
+        db_session: AsyncSession,
+        user: UserModel,
+    ):
+        EntryFactory.__async_session__ = db_session
+        await EntryFactory.create_async(
+            user=user,
+            entry_type=EntryTypeEnum.DEBIT,
+            payment_method=PaymentMethodEnum.PIX,
+        )
+        await EntryFactory.create_async(
+            user=user,
+            entry_type=EntryTypeEnum.DEBIT,
+            payment_method=PaymentMethodEnum.CASH,
+        )
+        await EntryFactory.create_async(
+            user=user,
+            entry_type=EntryTypeEnum.CREDIT,
+            payment_method=PaymentMethodEnum.PIX,
+        )
+        set_params(Params(page=1, size=1))
+
+        result = await EntryRepository(db_session).get_all(user.id, EntryFilterSchema())
+
+        assert result.total == 3
+        assert result.by_entry_type == {
+            EntryTypeEnum.DEBIT: 2,
+            EntryTypeEnum.CREDIT: 1,
+        }
+        assert result.by_payment_method == {
+            PaymentMethodEnum.DEBIT_CARD: 0,
+            PaymentMethodEnum.CREDIT_CARD: 0,
+            PaymentMethodEnum.PIX: 2,
+            PaymentMethodEnum.CASH: 1,
+            PaymentMethodEnum.ACCOUNT_TRANSFER: 0,
+        }
+
+    async def test_get_all_returns_period_and_cumulative_balances(
+        self,
+        db_session: AsyncSession,
+        user: UserModel,
+    ):
+        EntryFactory.__async_session__ = db_session
+        start_date = datetime.date.today() - datetime.timedelta(days=10)
+        end_date = datetime.date.today() - datetime.timedelta(days=1)
+        await EntryFactory.create_async(
+            user=user,
+            payment_date=start_date - datetime.timedelta(days=1),
+            amount=Decimal("100.00"),
+            entry_type=EntryTypeEnum.DEBIT,
+            category="ignored",
+        )
+        await EntryFactory.create_async(
+            user=user,
+            payment_date=start_date,
+            amount=Decimal("250.00"),
+            entry_type=EntryTypeEnum.CREDIT,
+            category="salary",
+        )
+        await EntryFactory.create_async(
+            user=user,
+            payment_date=end_date,
+            amount=Decimal("50.00"),
+            entry_type=EntryTypeEnum.DEBIT,
+            category="ignored",
+        )
+        await EntryFactory.create_async(
+            user=user,
+            payment_date=end_date + datetime.timedelta(days=1),
+            amount=Decimal("500.00"),
+            entry_type=EntryTypeEnum.CREDIT,
+            category="salary",
+        )
+        set_params(Params(page=1, size=50))
+
+        result = await EntryRepository(db_session).get_all(
+            user.id,
+            EntryFilterSchema(start_date=start_date, end_date=end_date, category="salary"),
+        )
+
+        assert result.last_balance == Decimal("-100.00")
+        assert result.current_balance == Decimal("200.00")
+        assert result.balance == Decimal("100.00")

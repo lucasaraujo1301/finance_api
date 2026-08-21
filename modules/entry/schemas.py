@@ -1,10 +1,11 @@
 from datetime import date
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from fastapi_pagination import Page
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from modules.core.schemas import BaseSchema, TimestampSchemaMixin
-from modules.core.types import Money
+from modules.core.types import Balance, Money
 from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
 from modules.entry.types import EntryType, PaymentMethod
 
@@ -14,7 +15,7 @@ class BaseEntrySchema(BaseSchema):
     entry_type: EntryType
     payment_method: PaymentMethod
     category: str
-    description: str
+    description: str | None
     payment_date: date
     is_fixed: bool
 
@@ -48,3 +49,17 @@ class EntryFilterSchema(BaseModel):
     category: str | None = None
     payment_method: PaymentMethodEnum | None = None
     entry_type: EntryTypeEnum | None = None
+
+    @model_validator(mode="after")
+    def validate_date_range(self):
+        if self.start_date and self.end_date and self.end_date <= self.start_date:
+            raise ValueError("end_date must be after start_date")
+        return self
+
+
+class EntryPage(Page[EntrySchema]):
+    last_balance: Balance | None = None
+    balance: Balance
+    current_balance: Balance
+    by_payment_method: dict[PaymentMethodEnum, int] | None = None
+    by_entry_type: dict[EntryTypeEnum, int] | None = None

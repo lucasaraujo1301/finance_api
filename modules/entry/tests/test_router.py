@@ -70,6 +70,25 @@ class TestEntryRouter(AuthRequestMixin):
             }
         ]
 
+    async def test_create_entry_accepts_null_description(self, client, user):
+        response = await self.auth_post(
+            client,
+            user,
+            path="/",
+            json={
+                "amount": "4410.96",
+                "payment_method": "account_transfer",
+                "category": "string",
+                "entry_type": "credit",
+                "description": None,
+                "payment_date": "2012-01-25",
+                "is_fixed": False,
+            },
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json()["data"]["description"] is None
+
     async def test_create_entry_requires_jwt(self, client):
         response = await self.auth_post(
             client,
@@ -179,6 +198,8 @@ class TestEntryRouter(AuthRequestMixin):
         assert response.json()["size"] == 1
         assert response.json()["pages"] == 2
         assert [entry["id"] for entry in response.json()["items"]] == [str(newer_entry.id)]
+        assert response.json()["by_entry_type"] is None
+        assert response.json()["by_payment_method"] is None
 
     async def test_get_entries_accepts_no_filters(self, client, user):
         response = await self.auth_get(
@@ -190,3 +211,47 @@ class TestEntryRouter(AuthRequestMixin):
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["items"] == []
         assert response.json()["total"] == 0
+        assert response.json()["by_entry_type"] is None
+        assert response.json()["by_payment_method"] is None
+
+    async def test_get_entries_rejects_invalid_date_range(self, client, user):
+        today = date.today()
+
+        response = await self.auth_get(
+            client,
+            user,
+            path="/",
+            params={"start_date": today.isoformat(), "end_date": today.isoformat()},
+        )
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+        assert response.json()["errors"]["detail"][0]["msg"] == "Value error, end_date must be after start_date"
+
+    async def test_get_entries_returns_analytics(self, client, db_session, user):
+        EntryFactory.__async_session__ = db_session
+        await EntryFactory.create_async(
+            user=user,
+            entry_type=EntryTypeEnum.DEBIT,
+            payment_method=PaymentMethodEnum.PIX,
+        )
+        await EntryFactory.create_async(
+            user=user,
+            entry_type=EntryTypeEnum.CREDIT,
+            payment_method=PaymentMethodEnum.CASH,
+        )
+
+        response = await self.auth_get(client, user, path="/", params={"size": 1})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["total"] == 2
+        assert response.json()["by_entry_type"] == {"debit": 1, "credit": 1}
+        assert response.json()["by_payment_method"] == {
+            "debit_card": 0,
+            "credit_card": 0,
+            "pix": 1,
+            "cash": 1,
+            "account_transfer": 0,
+        }
+        assert response.json()["last_balance"] is None
+        assert response.json()["current_balance"] == "0.00"
+        assert response.json()["balance"] == "0.00"
