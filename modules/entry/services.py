@@ -5,7 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.entry.models import EntryModel
 from modules.entry.repository import EntryRepository
-from modules.entry.schemas import EntryFilterSchema, EntryRequestSchema, TelegramEntryRequestSchema
+from modules.entry.schemas import (
+    EntryFilterSchema,
+    EntryRequestSchema,
+    EntrySummaryFilterSchema,
+    TelegramEntryRequestSchema,
+)
 from modules.user.services import UserService
 
 
@@ -47,5 +52,5 @@ class EntryService:
     async def get_all(self, user_id: UUID, query_params: EntryFilterSchema):
         return await self._entry_repository.get_all(user_id, query_params)
 
-    async def get_summary(self, user_id: UUID, query_params: EntryFilterSchema):
+    async def get_summary(self, user_id: UUID, query_params: EntrySummaryFilterSchema):
         return await self._entry_repository.get_summary(user_id, query_params)

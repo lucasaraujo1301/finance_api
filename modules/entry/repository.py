@@ -2,13 +2,13 @@ from datetime import date
 from uuid import UUID
 
 from fastapi_pagination.ext.sqlalchemy import apaginate
-from sqlalchemy import case, func, select
+from sqlalchemy import Date, Interval, case, cast, func, literal, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.core.repositories import BaseRepository
 from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
 from modules.entry.models import EntryModel
-from modules.entry.schemas import EntryFilterSchema, EntryPage, EntrySummarySchema
+from modules.entry.schemas import EntryFilterSchema, EntryPage, EntrySummaryFilterSchema, EntrySummarySchema
 
 
 class EntryRepository(BaseRepository[EntryModel]):
@@ -33,20 +33,54 @@ class EntryRepository(BaseRepository[EntryModel]):
 
         return await apaginate(self._session, statement)
 
-    async def get_summary(self, user_id: UUID, query_params: EntryFilterSchema) -> EntrySummarySchema:
+    async def get_summary(self, user_id: UUID, query_params: EntrySummaryFilterSchema) -> EntrySummarySchema:
         end_date = query_params.end_date or date.today()
-        signed_amount = case(
-            (EntryModel.entry_type == EntryTypeEnum.CREDIT, EntryModel.amount),
-            else_=-EntryModel.amount,
-        )
-        balance_filters = (
+        entries_statement = select(EntryModel).where(
             EntryModel.user_id == user_id,
             EntryModel.deleted_at.is_(None),
         )
+        entries = entries_statement.cte("summary_entries")
+
+        one_month = cast(literal("1 month"), Interval)
+        one_day = cast(literal("1 day"), Interval)
+        months = func.generate_series(
+            func.date_trunc("month", entries.c.payment_date),
+            func.date_trunc("month", end_date),
+            one_month,
+        ).table_valued("month_start").render_derived().lateral()
+        last_day = func.date_trunc("month", months.c.month_start) + one_month - one_day
+        occurrence_date = cast(
+            months.c.month_start
+            + (func.least(func.extract("day", entries.c.payment_date), func.extract("day", last_day)) - 1) * one_day,
+            Date,
+        )
+        recurring_entries = (
+            select(
+                entries.c.amount,
+                entries.c.entry_type,
+                entries.c.payment_method,
+                entries.c.category,
+                occurrence_date.label("occurrence_date"),
+            )
+            .select_from(entries.join(months, true()))
+            .where(entries.c.is_fixed.is_(True), occurrence_date >= entries.c.payment_date)
+        )
+        one_time_entries = select(
+            entries.c.amount,
+            entries.c.entry_type,
+            entries.c.payment_method,
+            entries.c.category,
+            entries.c.payment_date.label("occurrence_date"),
+        ).where(entries.c.is_fixed.is_(False))
+        occurrences = recurring_entries.union_all(one_time_entries).cte("entry_occurrences")
+
+        signed_amount = case(
+            (occurrences.c.entry_type == EntryTypeEnum.CREDIT, occurrences.c.amount),
+            else_=-occurrences.c.amount,
+        )
         balance = await self._session.scalar(
             select(func.coalesce(func.sum(signed_amount), 0)).where(
-                *balance_filters,
-                EntryModel.payment_date <= end_date,
+                occurrences.c.occurrence_date <= end_date,
             )
         )
 
@@ -54,35 +88,36 @@ class EntryRepository(BaseRepository[EntryModel]):
         if query_params.start_date:
             last_balance = await self._session.scalar(
                 select(func.coalesce(func.sum(signed_amount), 0)).where(
-                    *balance_filters,
-                    EntryModel.payment_date < query_params.start_date,
+                    occurrences.c.occurrence_date < query_params.start_date,
                 )
             )
 
-        current_balance_filters = [*balance_filters, EntryModel.payment_date <= end_date]
+        current_balance_filters = [occurrences.c.occurrence_date <= end_date]
         if query_params.start_date:
-            current_balance_filters.append(EntryModel.payment_date >= query_params.start_date)
+            current_balance_filters.append(occurrences.c.occurrence_date >= query_params.start_date)
         current_balance = await self._session.scalar(
             select(func.coalesce(func.sum(signed_amount), 0)).where(*current_balance_filters)
         )
 
         analytics_statement = select(
-            *(func.count().filter(EntryModel.entry_type == entry_type).label(f"entry_type_{entry_type.value}")
+            *(func.count().filter(occurrences.c.entry_type == entry_type).label(f"entry_type_{entry_type.value}")
               for entry_type in EntryTypeEnum),
-            *(func.count().filter(EntryModel.payment_method == payment_method).label(
+            *(func.count().filter(occurrences.c.payment_method == payment_method).label(
                 f"payment_method_{payment_method.value}"
             ) for payment_method in PaymentMethodEnum),
-        ).where(*balance_filters)
-        analytics = (await self._session.execute(self._apply_filters(analytics_statement, query_params))).one()
+        ).where(occurrences.c.occurrence_date <= end_date)
+        if query_params.start_date:
+            analytics_statement = analytics_statement.where(occurrences.c.occurrence_date >= query_params.start_date)
+        analytics = (await self._session.execute(analytics_statement)).one()
 
         return EntrySummarySchema(
             last_balance=last_balance,
             current_balance=current_balance,
             balance=balance,
-            by_entry_type=None if query_params.entry_type else {
+            by_entry_type={
                 entry_type: getattr(analytics, f"entry_type_{entry_type.value}") for entry_type in EntryTypeEnum
             },
-            by_payment_method=None if query_params.payment_method else {
+            by_payment_method={
                 payment_method: getattr(analytics, f"payment_method_{payment_method.value}")
                 for payment_method in PaymentMethodEnum
             },

@@ -14,7 +14,7 @@ def test_entry_request_accepts_current_and_past_payment_dates(payment_date: date
     entry = EntryRequestSchema(
         amount=Decimal("10.00"),
         payment_method=PaymentMethodEnum.PIX,
-        category="Food",
+        category="snack",
         payment_date=payment_date,
     )
 
@@ -26,7 +26,7 @@ def test_entry_request_rejects_future_payment_date():
         EntryRequestSchema(
             amount=Decimal("10.00"),
             payment_method=PaymentMethodEnum.PIX,
-            category="Food",
+            category="snack",
             payment_date=date.today() + timedelta(days=1),
         )
 

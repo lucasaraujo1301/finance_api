@@ -20,7 +20,7 @@ class TestEntryRouter(AuthRequestMixin):
         payload = {
             "amount": "10.50",
             "payment_method": "pix",
-            "category": "Food",
+            "category": "snack",
             "description": "Lunch",
             "payment_date": date.today().isoformat(),
         }
@@ -34,7 +34,7 @@ class TestEntryRouter(AuthRequestMixin):
             "amount": "10.50",
             "entry_type": EntryTypeEnum.DEBIT.label,
             "payment_method": PaymentMethodEnum.PIX.label,
-            "category": "Food",
+            "category": "snack",
             "description": "Lunch",
             "payment_date": payload["payment_date"],
             "is_fixed": False,
@@ -56,7 +56,7 @@ class TestEntryRouter(AuthRequestMixin):
             json={
                 "amount": "10.50",
                 "payment_method": "pix",
-                "category": "Food",
+                "category": "snack",
                 "payment_date": (date.today() + timedelta(days=1)).isoformat(),
             },
         )
@@ -78,7 +78,7 @@ class TestEntryRouter(AuthRequestMixin):
             json={
                 "amount": "4410.96",
                 "payment_method": "account_transfer",
-                "category": "string",
+                "category": "other",
                 "entry_type": "credit",
                 "description": None,
                 "payment_date": "2012-01-25",
@@ -97,7 +97,7 @@ class TestEntryRouter(AuthRequestMixin):
             json={
                 "amount": "10.50",
                 "payment_method": "pix",
-                "category": "Food",
+                "category": "snack",
                 "payment_date": date.today().isoformat(),
             },
         )
@@ -118,7 +118,7 @@ class TestEntryRouter(AuthRequestMixin):
             "telegram_id": user.telegram_id,
             "amount": "10.50",
             "payment_method": "pix",
-            "category": "Food",
+            "category": "snack",
             "description": "Lunch",
             "payment_date": date.today().isoformat(),
         }
@@ -137,7 +137,7 @@ class TestEntryRouter(AuthRequestMixin):
             "amount": "10.50",
             "entry_type": EntryTypeEnum.DEBIT.label,
             "payment_method": PaymentMethodEnum.PIX.label,
-            "category": "Food",
+            "category": "snack",
             "description": "Lunch",
             "payment_date": payload["payment_date"],
             "is_fixed": False,
@@ -158,14 +158,14 @@ class TestEntryRouter(AuthRequestMixin):
         await EntryFactory.create_async(
             user=user,
             payment_date=today - timedelta(days=2),
-            category="food",
+            category="snack",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
         newer_entry = await EntryFactory.create_async(
             user=user,
             payment_date=today - timedelta(days=1),
-            category="food",
+            category="snack",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
@@ -186,7 +186,7 @@ class TestEntryRouter(AuthRequestMixin):
                 "size": 1,
                 "start_date": (today - timedelta(days=3)).isoformat(),
                 "end_date": today.isoformat(),
-                "category": "food",
+                "category": "snack",
                 "entry_type": "debit",
                 "payment_method": "pix",
             },
@@ -251,3 +251,18 @@ class TestEntryRouter(AuthRequestMixin):
         assert response.json()["data"]["last_balance"] is None
         assert response.json()["data"]["current_balance"] == "0.00"
         assert response.json()["data"]["balance"] == "0.00"
+
+    async def test_get_entries_summary_ignores_entry_filters(self, client, db_session, user):
+        EntryFactory.__async_session__ = db_session
+        await EntryFactory.create_async(user=user, category="other", entry_type=EntryTypeEnum.CREDIT)
+        await EntryFactory.create_async(user=user, category="snack", entry_type=EntryTypeEnum.DEBIT)
+
+        response = await self.auth_get(
+            client,
+            user,
+            path="/summary",
+            params={"category": "snack", "entry_type": "debit", "payment_method": "pix"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["data"]["by_entry_type"] == {"debit": 1, "credit": 1}

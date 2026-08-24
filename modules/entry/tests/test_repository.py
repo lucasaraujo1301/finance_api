@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
 from modules.entry.models import EntryModel
 from modules.entry.repository import EntryRepository
-from modules.entry.schemas import EntryFilterSchema
+from modules.entry.schemas import EntryFilterSchema, EntrySummaryFilterSchema
 from modules.entry.tests.fixtures.factories import EntryFactory
 from modules.user.models import UserModel
 from modules.user.tests.fixtures.factories import UserFactory
@@ -28,7 +28,7 @@ class TestEntryRepository:
             payment_method=PaymentMethodEnum.CREDIT_CARD,
             amount=Decimal("10.50"),
             payment_date=payment_date,
-            category="food",
+            category="snack",
             description="Lunch",
             is_fixed=False,
         )
@@ -39,7 +39,7 @@ class TestEntryRepository:
         assert result.user_id == user.id
         assert result.entry_type == EntryTypeEnum.DEBIT
         assert result.amount == Decimal("10.50")
-        assert result.category == "food"
+        assert result.category == "snack"
         assert result.description == "Lunch"
         assert result.is_fixed is False
         assert result.payment_date == payment_date
@@ -76,14 +76,14 @@ class TestEntryRepository:
         matching_entry = await EntryFactory.create_async(
             user=user,
             payment_date=today - datetime.timedelta(days=2),
-            category="food",
+            category="snack",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
         await EntryFactory.create_async(
             user=user,
             payment_date=today - datetime.timedelta(days=10),
-            category="food",
+            category="snack",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
@@ -97,21 +97,21 @@ class TestEntryRepository:
         await EntryFactory.create_async(
             user=user,
             payment_date=today - datetime.timedelta(days=2),
-            category="food",
+            category="snack",
             entry_type=EntryTypeEnum.CREDIT,
             payment_method=PaymentMethodEnum.PIX,
         )
         await EntryFactory.create_async(
             user=user,
             payment_date=today - datetime.timedelta(days=2),
-            category="food",
+            category="snack",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.CASH,
         )
         await EntryFactory.create_async(
             user=user,
             payment_date=today - datetime.timedelta(days=2),
-            category="food",
+            category="snack",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
             deleted_at=datetime.datetime.now(datetime.UTC),
@@ -120,14 +120,14 @@ class TestEntryRepository:
         await EntryFactory.create_async(
             user=other_user,
             payment_date=today - datetime.timedelta(days=2),
-            category="food",
+            category="snack",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
         filters = EntryFilterSchema(
             start_date=today - datetime.timedelta(days=3),
             end_date=today - datetime.timedelta(days=1),
-            category="food",
+            category="snack",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
@@ -159,7 +159,7 @@ class TestEntryRepository:
             entry_type=EntryTypeEnum.CREDIT,
             payment_method=PaymentMethodEnum.PIX,
         )
-        result = await EntryRepository(db_session).get_summary(user.id, EntryFilterSchema())
+        result = await EntryRepository(db_session).get_summary(user.id, EntrySummaryFilterSchema())
 
         assert result.by_entry_type == {
             EntryTypeEnum.DEBIT: 2,
@@ -186,34 +186,96 @@ class TestEntryRepository:
             payment_date=start_date - datetime.timedelta(days=1),
             amount=Decimal("100.00"),
             entry_type=EntryTypeEnum.DEBIT,
-            category="ignored",
+            category="other",
         )
         await EntryFactory.create_async(
             user=user,
             payment_date=start_date,
             amount=Decimal("250.00"),
             entry_type=EntryTypeEnum.CREDIT,
-            category="salary",
+            category="other",
         )
         await EntryFactory.create_async(
             user=user,
             payment_date=end_date,
             amount=Decimal("50.00"),
             entry_type=EntryTypeEnum.DEBIT,
-            category="ignored",
+            category="other",
         )
         await EntryFactory.create_async(
             user=user,
             payment_date=end_date + datetime.timedelta(days=1),
             amount=Decimal("500.00"),
             entry_type=EntryTypeEnum.CREDIT,
-            category="salary",
+            category="other",
         )
         result = await EntryRepository(db_session).get_summary(
             user.id,
-            EntryFilterSchema(start_date=start_date, end_date=end_date, category="salary"),
+            EntrySummaryFilterSchema(start_date=start_date, end_date=end_date),
         )
 
         assert result.last_balance == Decimal("-100.00")
         assert result.current_balance == Decimal("200.00")
         assert result.balance == Decimal("100.00")
+
+    async def test_get_summary_counts_fixed_entries_monthly_from_payment_date(
+        self,
+        db_session: AsyncSession,
+        user: UserModel,
+    ):
+        EntryFactory.__async_session__ = db_session
+        await EntryFactory.create_async(
+            user=user,
+            payment_date=datetime.date(2026, 1, 31),
+            amount=Decimal("1000.00"),
+            entry_type=EntryTypeEnum.CREDIT,
+            payment_method=PaymentMethodEnum.ACCOUNT_TRANSFER,
+            is_fixed=True,
+        )
+
+        result = await EntryRepository(db_session).get_summary(
+            user.id,
+            EntrySummaryFilterSchema(
+                start_date=datetime.date(2026, 2, 1),
+                end_date=datetime.date(2026, 3, 31),
+            ),
+        )
+
+        assert result.last_balance == Decimal("1000.00")
+        assert result.current_balance == Decimal("2000.00")
+        assert result.balance == Decimal("3000.00")
+        assert result.by_entry_type == {
+            EntryTypeEnum.DEBIT: 0,
+            EntryTypeEnum.CREDIT: 2,
+        }
+        assert result.by_payment_method[PaymentMethodEnum.ACCOUNT_TRANSFER] == 2
+
+    async def test_get_summary_excludes_fixed_entry_before_its_payment_date(
+        self,
+        db_session: AsyncSession,
+        user: UserModel,
+    ):
+        EntryFactory.__async_session__ = db_session
+        await EntryFactory.create_async(
+            user=user,
+            payment_date=datetime.date(2026, 3, 15),
+            amount=Decimal("1000.00"),
+            entry_type=EntryTypeEnum.CREDIT,
+            is_fixed=True,
+        )
+
+        result = await EntryRepository(db_session).get_summary(
+            user.id,
+            EntrySummaryFilterSchema(
+                start_date=datetime.date(2026, 2, 1),
+                end_date=datetime.date(2026, 2, 28),
+            ),
+        )
+
+        assert result.last_balance == Decimal("0.00")
+        assert result.current_balance == Decimal("0.00")
+        assert result.balance == Decimal("0.00")
+        assert result.by_entry_type == {
+            EntryTypeEnum.DEBIT: 0,
+            EntryTypeEnum.CREDIT: 0,
+        }

@@ -43,18 +43,21 @@ class EntrySchema(TimestampSchemaMixin, BaseEntrySchema):
     id: UUID
 
 
-class EntryFilterSchema(BaseModel):
+class EntrySummaryFilterSchema(BaseModel):
     start_date: date | None = None
     end_date: date | None = None
-    category: str | None = None
-    payment_method: PaymentMethodEnum | None = None
-    entry_type: EntryTypeEnum | None = None
 
     @model_validator(mode="after")
     def validate_date_range(self):
         if self.start_date and self.end_date and self.end_date <= self.start_date:
             raise ValueError("end_date must be after start_date")
         return self
+
+
+class EntryFilterSchema(EntrySummaryFilterSchema):
+    category: str | None = None
+    payment_method: PaymentMethodEnum | None = None
+    entry_type: EntryTypeEnum | None = None
 
 
 class EntrySummarySchema(BaseSchema):

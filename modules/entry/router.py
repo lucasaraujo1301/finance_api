@@ -9,6 +9,7 @@ from modules.entry.schemas import (
     EntryPage,
     EntryRequestSchema,
     EntrySchema,
+    EntrySummaryFilterSchema,
     EntrySummarySchema,
     TelegramEntryRequestSchema,
 )
@@ -32,7 +33,7 @@ async def get_entries(
 
 @router.get("/summary", response_model=ApiResponse[EntrySummarySchema])
 async def get_entries_summary(
-    entry_service: EntryServiceDep, query_params: Annotated[EntryFilterSchema, Query()], user: CurrentUser
+    entry_service: EntryServiceDep, query_params: Annotated[EntrySummaryFilterSchema, Query()], user: CurrentUser
 ):
     return ApiResponse(data=await entry_service.get_summary(user.id, query_params))
 

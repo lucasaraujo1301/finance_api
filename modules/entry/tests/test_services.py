@@ -11,7 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from modules.core.logger import logger
 from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
 from modules.entry.models import EntryModel
-from modules.entry.schemas import EntryFilterSchema, EntryRequestSchema, TelegramEntryRequestSchema
+from modules.entry.schemas import (
+    EntryFilterSchema,
+    EntryRequestSchema,
+    EntrySummaryFilterSchema,
+    TelegramEntryRequestSchema,
+)
 from modules.entry.services import EntryService
 from modules.entry.tests.fixtures.factories import EntryFactory
 from modules.service_account.models import ServiceAccountModel
@@ -32,7 +37,7 @@ class TestEntryService:
             amount=Decimal("10.50"),
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
-            category="food",
+            category="snack",
             description="Lunch",
             payment_date=payment_date,
             is_fixed=False,
@@ -48,7 +53,7 @@ class TestEntryService:
         assert result.amount == Decimal("10.50")
         assert result.entry_type == EntryTypeEnum.DEBIT
         assert result.payment_method == PaymentMethodEnum.PIX
-        assert result.category == "food"
+        assert result.category == "snack"
         assert result.description == "Lunch"
         assert result.payment_date == payment_date
         assert result.is_fixed is False
@@ -63,7 +68,7 @@ class TestEntryService:
             telegram_id=user.telegram_id,
             amount=Decimal("10.50"),
             payment_method=PaymentMethodEnum.PIX,
-            category="food",
+            category="snack",
         )
         service = self._get_service(db_session)
 
@@ -81,7 +86,7 @@ class TestEntryService:
             telegram_id="unknown",
             amount=Decimal("10.50"),
             payment_method=PaymentMethodEnum.PIX,
-            category="food",
+            category="snack",
         )
         service = self._get_service(db_session)
 
@@ -90,12 +95,12 @@ class TestEntryService:
 
     async def test_get_all_returns_paginated_filtered_entries(self, db_session: AsyncSession, user: UserModel):
         EntryFactory.__async_session__ = db_session
-        matching_entry = await EntryFactory.create_async(user=user, category="food")
+        matching_entry = await EntryFactory.create_async(user=user, category="snack")
         await EntryFactory.create_async(user=user, category="transport")
         filters = EntryFilterSchema(
             start_date=None,
             end_date=None,
-            category="food",
+            category="snack",
             payment_method=None,
             entry_type=None,
         )
@@ -117,7 +122,7 @@ class TestEntryService:
         )
         service = self._get_service(db_session)
 
-        result = await service.get_summary(user.id, EntryFilterSchema())
+        result = await service.get_summary(user.id, EntrySummaryFilterSchema())
 
         assert result.balance == Decimal("-10.00")
         assert result.current_balance == Decimal("-10.00")
