@@ -106,3 +106,19 @@ class TestEntryService:
 
         assert result.total == 1
         assert [entry.id for entry in result.items] == [matching_entry.id]
+
+    async def test_get_summary_returns_entry_aggregates(self, db_session: AsyncSession, user: UserModel):
+        EntryFactory.__async_session__ = db_session
+        await EntryFactory.create_async(
+            user=user,
+            amount=Decimal("10.00"),
+            entry_type=EntryTypeEnum.DEBIT,
+            payment_method=PaymentMethodEnum.PIX,
+        )
+        service = self._get_service(db_session)
+
+        result = await service.get_summary(user.id, EntryFilterSchema())
+
+        assert result.balance == Decimal("-10.00")
+        assert result.current_balance == Decimal("-10.00")
+        assert result.by_entry_type[EntryTypeEnum.DEBIT] == 1

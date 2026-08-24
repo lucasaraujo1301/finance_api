@@ -137,10 +137,8 @@ class TestEntryRepository:
 
         assert result.total == 1
         assert [entry.id for entry in result.items] == [matching_entry.id]
-        assert result.by_entry_type is None
-        assert result.by_payment_method is None
 
-    async def test_get_all_returns_analytics_for_unfiltered_dimensions(
+    async def test_get_summary_returns_analytics_for_unfiltered_dimensions(
         self,
         db_session: AsyncSession,
         user: UserModel,
@@ -161,11 +159,8 @@ class TestEntryRepository:
             entry_type=EntryTypeEnum.CREDIT,
             payment_method=PaymentMethodEnum.PIX,
         )
-        set_params(Params(page=1, size=1))
+        result = await EntryRepository(db_session).get_summary(user.id, EntryFilterSchema())
 
-        result = await EntryRepository(db_session).get_all(user.id, EntryFilterSchema())
-
-        assert result.total == 3
         assert result.by_entry_type == {
             EntryTypeEnum.DEBIT: 2,
             EntryTypeEnum.CREDIT: 1,
@@ -178,7 +173,7 @@ class TestEntryRepository:
             PaymentMethodEnum.ACCOUNT_TRANSFER: 0,
         }
 
-    async def test_get_all_returns_period_and_cumulative_balances(
+    async def test_get_summary_returns_period_and_cumulative_balances(
         self,
         db_session: AsyncSession,
         user: UserModel,
@@ -214,9 +209,7 @@ class TestEntryRepository:
             entry_type=EntryTypeEnum.CREDIT,
             category="salary",
         )
-        set_params(Params(page=1, size=50))
-
-        result = await EntryRepository(db_session).get_all(
+        result = await EntryRepository(db_session).get_summary(
             user.id,
             EntryFilterSchema(start_date=start_date, end_date=end_date, category="salary"),
         )

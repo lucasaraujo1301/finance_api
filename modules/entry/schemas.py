@@ -57,9 +57,12 @@ class EntryFilterSchema(BaseModel):
         return self
 
 
-class EntryPage(Page[EntrySchema]):
+class EntrySummarySchema(BaseSchema):
     last_balance: Balance | None = None
     balance: Balance
     current_balance: Balance
     by_payment_method: dict[PaymentMethodEnum, int] | None = None
     by_entry_type: dict[EntryTypeEnum, int] | None = None
+
+
+EntryPage = Page[EntrySchema]

@@ -9,6 +9,7 @@ from modules.entry.schemas import (
     EntryPage,
     EntryRequestSchema,
     EntrySchema,
+    EntrySummarySchema,
     TelegramEntryRequestSchema,
 )
 from modules.service_account.dependencies import CurrentServiceAccount
@@ -27,6 +28,13 @@ async def get_entries(
     entry_service: EntryServiceDep, query_params: Annotated[EntryFilterSchema, Query()], user: CurrentUser
 ):
     return await entry_service.get_all(user.id, query_params)
+
+
+@router.get("/summary", response_model=ApiResponse[EntrySummarySchema])
+async def get_entries_summary(
+    entry_service: EntryServiceDep, query_params: Annotated[EntryFilterSchema, Query()], user: CurrentUser
+):
+    return ApiResponse(data=await entry_service.get_summary(user.id, query_params))
 
 
 @router.post("/telegram", response_model=ApiResponse[EntrySchema], status_code=status.HTTP_201_CREATED)

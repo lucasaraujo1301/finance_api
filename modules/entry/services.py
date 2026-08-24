@@ -46,3 +46,6 @@ class EntryService:
 
     async def get_all(self, user_id: UUID, query_params: EntryFilterSchema):
         return await self._entry_repository.get_all(user_id, query_params)
+
+    async def get_summary(self, user_id: UUID, query_params: EntryFilterSchema):
+        return await self._entry_repository.get_summary(user_id, query_params)
