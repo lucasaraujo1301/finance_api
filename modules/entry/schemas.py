@@ -64,8 +64,8 @@ class EntrySummarySchema(BaseSchema):
     last_balance: Balance | None = None
     balance: Balance
     current_balance: Balance
-    by_payment_method: dict[PaymentMethodEnum, int] | None = None
-    by_entry_type: dict[EntryTypeEnum, int] | None = None
+    by_payment_method: dict[PaymentMethodEnum, int]
+    by_entry_type: dict[EntryTypeEnum, int]
 
 
 EntryPage = Page[EntrySchema]

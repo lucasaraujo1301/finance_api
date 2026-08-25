@@ -1,3 +1,5 @@
+from typing import cast
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -34,7 +36,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         exception = ValidationException()
         return JSONResponse(
             status_code=exception.status_code,
-            content=error_response(exception, convert_validation_errors(exc.errors())),
+            content=error_response(exception, convert_validation_errors(cast(list[ErrorDetails], exc.errors()))),
         )
 
     @app.exception_handler(BaseException)

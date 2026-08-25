@@ -49,6 +49,9 @@ dev = [
 [tool.fastapi]         
     entrypoint = "modules.core.main:app"
 
+[tool.ty.src]
+exclude = ["migrations", ".venv"]
+
 [tool.ruff]
 exclude = [
     ".venv",

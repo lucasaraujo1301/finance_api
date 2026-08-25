@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi_pagination.ext.sqlalchemy import apaginate
@@ -43,11 +44,16 @@ class EntryRepository(BaseRepository[EntryModel]):
 
         one_month = cast(literal("1 month"), Interval)
         one_day = cast(literal("1 day"), Interval)
-        months = func.generate_series(
-            func.date_trunc("month", entries.c.payment_date),
-            func.date_trunc("month", end_date),
-            one_month,
-        ).table_valued("month_start").render_derived().lateral()
+        months = (
+            func.generate_series(
+                func.date_trunc("month", entries.c.payment_date),
+                func.date_trunc("month", end_date),
+                one_month,
+            )
+            .table_valued("month_start")
+            .render_derived()
+            .lateral()
+        )
         last_day = func.date_trunc("month", months.c.month_start) + one_month - one_day
         occurrence_date = cast(
             months.c.month_start
@@ -92,19 +98,26 @@ class EntryRepository(BaseRepository[EntryModel]):
                 )
             )
 
-        current_balance_filters = [occurrences.c.occurrence_date <= end_date]
-        if query_params.start_date:
-            current_balance_filters.append(occurrences.c.occurrence_date >= query_params.start_date)
-        current_balance = await self._session.scalar(
-            select(func.coalesce(func.sum(signed_amount), 0)).where(*current_balance_filters)
+        current_balance_statement = select(func.coalesce(func.sum(signed_amount), 0)).where(
+            occurrences.c.occurrence_date <= end_date
         )
+        if query_params.start_date:
+            current_balance_statement = current_balance_statement.where(
+                occurrences.c.occurrence_date >= query_params.start_date
+            )
+        current_balance = await self._session.scalar(current_balance_statement)
 
         analytics_statement = select(
-            *(func.count().filter(occurrences.c.entry_type == entry_type).label(f"entry_type_{entry_type.value}")
-              for entry_type in EntryTypeEnum),
-            *(func.count().filter(occurrences.c.payment_method == payment_method).label(
-                f"payment_method_{payment_method.value}"
-            ) for payment_method in PaymentMethodEnum),
+            *(
+                func.count().filter(occurrences.c.entry_type == entry_type).label(f"entry_type_{entry_type.value}")
+                for entry_type in EntryTypeEnum
+            ),
+            *(
+                func.count()
+                .filter(occurrences.c.payment_method == payment_method)
+                .label(f"payment_method_{payment_method.value}")
+                for payment_method in PaymentMethodEnum
+            ),
         ).where(occurrences.c.occurrence_date <= end_date)
         if query_params.start_date:
             analytics_statement = analytics_statement.where(occurrences.c.occurrence_date >= query_params.start_date)
@@ -112,8 +125,8 @@ class EntryRepository(BaseRepository[EntryModel]):
 
         return EntrySummarySchema(
             last_balance=last_balance,
-            current_balance=current_balance,
-            balance=balance,
+            current_balance=current_balance or Decimal("0.00"),
+            balance=balance or Decimal("0.00"),
             by_entry_type={
                 entry_type: getattr(analytics, f"entry_type_{entry_type.value}") for entry_type in EntryTypeEnum
             },
