@@ -24,9 +24,7 @@ class TestServiceAccountService:
         db_session,
         service_account_service,
     ):
-        result = await service_account_service.create(
-            CreateServiceAccountSchema(name="telegram-bot")
-        )
+        result = await service_account_service.create(CreateServiceAccountSchema(name="telegram-bot"))
 
         persisted = await db_session.scalar(select(ServiceAccountModel).where(ServiceAccountModel.id == result.id))
         assert result.name == "telegram-bot"
@@ -45,9 +43,7 @@ class TestServiceAccountService:
         await db_session.flush()
 
         with pytest.raises(ServiceAccountAlreadyExists):
-            await service_account_service.create(
-                CreateServiceAccountSchema(name=service_account.name)
-            )
+            await service_account_service.create(CreateServiceAccountSchema(name=service_account.name))
 
     async def test_get_by_api_key_returns_service_account(self, service_account_with_api_key, service_account_service):
         service_account, raw_key = service_account_with_api_key

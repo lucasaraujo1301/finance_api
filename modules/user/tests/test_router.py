@@ -77,9 +77,7 @@ class TestUserRouter(AuthRequestMixin):
         assert response.json()["success"] is True
         assert response.json()["data"]["full_name"] == "Telegram User"
         assert response.json()["data"]["telegram_id"] == "222"
-        assert response.json()["data"]["password_update_url"].startswith(
-            "http://localhost:3000/reset-password?token="
-        )
+        assert response.json()["data"]["password_update_url"].startswith("http://localhost:3000/reset-password?token=")
         assert "password" not in response.json()["data"]
 
     async def test_create_telegram_user_requires_service_account(self, client):

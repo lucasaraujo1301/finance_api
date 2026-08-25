@@ -44,9 +44,7 @@ class TestAuthService:
         user, _ = user_with_password
 
         with pytest.raises(InvalidCredentials):
-            await auth_service.login(
-                LoginSchema(email=user.email, password="wrong-password")
-            )
+            await auth_service.login(LoginSchema(email=user.email, password="wrong-password"))
 
     async def test_refresh_token_returns_new_token_pair(self, db_session: AsyncSession, auth_service):
         password = "secret-password"

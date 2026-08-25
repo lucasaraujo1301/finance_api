@@ -19,6 +19,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 async def get_user_repository(db: AsyncDbDep) -> UserRepository:
     return UserRepository(db)
 
+
 async def get_user_service(repository: UserRepositoryDep) -> UserService:
     return UserService(logger, repository, password_hash)
 

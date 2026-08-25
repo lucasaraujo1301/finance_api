@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from logging import Logger
 from secrets import token_urlsafe
+from uuid import UUID
 
 import jwt
 
@@ -78,7 +79,7 @@ class UserService:
 
         return user
 
-    async def get_by_id(self, user_id: str) -> UserModel:
+    async def get_by_id(self, user_id: UUID) -> UserModel:
         user = await self._repository.get_by_id(user_id)
         if user is None:
             raise UserNotFound()
@@ -141,7 +142,7 @@ class AuthService:
         return TokenSchema(
             access_token=create_access_token(user, self._settings),
             refresh_token=self._create_token(
-                user,
+                user.id,
                 "refresh",
                 timedelta(days=self._settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS),
             ),
@@ -149,9 +150,9 @@ class AuthService:
             is_superuser=user.is_superuser,
         )
 
-    def create_password_update_url(self, user: UserModel) -> str:
+    def create_password_update_url(self, user: UserSchema) -> str:
         token = self._create_token(
-            user,
+            user.id,
             "password_setup",
             timedelta(minutes=self._settings.JWT_PASSWORD_UPDATE_TOKEN_EXPIRE_MINUTES),
         )
@@ -179,11 +180,11 @@ class AuthService:
 
         return user
 
-    def _create_token(self, user: UserModel, token_type: str, expires_delta: timedelta) -> str:
+    def _create_token(self, user_id: UUID, token_type: str, expires_delta: timedelta) -> str:
         now = datetime.now(timezone.utc)
         return jwt.encode(
             {
-                "sub": str(user.id),
+                "sub": str(user_id),
                 "type": token_type,
                 "iss": self._settings.JWT_ISSUER,
                 "aud": self._settings.JWT_AUDIENCE,
