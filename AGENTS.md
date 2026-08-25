@@ -63,8 +63,9 @@ module should ever be imported inside `core/`.
 4. If a new table is needed, create the model in `models.py` inheriting from
    the Base in `core/models.py`, then generate the migration via Alembic
    (`alembic revision --autogenerate`) — never edit `migrations/` by hand.
-5. Never duplicate infrastructure logic (pagination, authentication,
-   logging) — that belongs in `core/`.
+5. Never duplicate infrastructure logic. Logging belongs in `core/`.
+   Pagination is provided directly by the third-party `fastapi_pagination`
+   library and does not belong in `core/` or a feature module.
 
 ## 4. Inter-module dependency rule (anti-cycle)
 
@@ -94,6 +95,12 @@ reverse.
 check:** does `modules/X` already import (directly or indirectly) something
 from `modules/Y`? If so, **do not add the import** — refactor into `core/`
 or into a one-directional interface instead.
+
+Dependencies between modules are resolved through FastAPI's dependency
+injection system. Services and repositories receive dependency instances as
+arguments rather than instantiating or resolving them directly. Imports in
+services and repositories may be used for type annotations, but must not be
+used to manually construct or resolve injected dependencies.
 
 ## 5. Tests
 

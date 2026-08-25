@@ -12,3 +12,7 @@ class UserRepository(BaseRepository[UserModel]):
     async def get_user_by_telegram_id(self, telegram_id: str) -> UserModel | None:
         result = await self._session.execute(select(UserModel).where(UserModel.telegram_id == telegram_id))
         return result.scalars().first()
+
+    async def get_user_by_email(self, email: str) -> UserModel | None:
+        result = await self._session.execute(select(UserModel).where(UserModel.email == email))
+        return result.scalars().first()

@@ -1,10 +1,13 @@
 from uuid import UUID
 
+from pydantic import EmailStr
+
 from modules.core.schemas import BaseSchema, TimestampSchemaMixin
 
 
 class BaseUserSchema(BaseSchema):
     full_name: str | None = None
+    email: EmailStr
     telegram_id: str
 
 
@@ -18,7 +21,7 @@ class TelegramUserCreateSchema(BaseUserSchema):
 
 
 class LoginSchema(BaseSchema):
-    telegram_id: str
+    email: EmailStr
     password: str
 
 
@@ -36,8 +39,18 @@ class TokenSchema(BaseSchema):
 class UserSchema(TimestampSchemaMixin, BaseUserSchema):
     id: UUID
     is_superuser: bool
+    needs_password_update: bool
+
+
+class TelegramUserResponseSchema(UserSchema):
+    password_update_url: str
 
 
 class PatchUserSchema(BaseSchema):
     password: str | None = None
     full_name: str | None = None
+    email: EmailStr | None = None
+
+
+class PasswordUpdateSchema(BaseSchema):
+    password: str

@@ -1,8 +1,6 @@
 from logging import Logger
 from uuid import UUID
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from modules.entry.models import EntryModel
 from modules.entry.repository import EntryRepository
 from modules.entry.schemas import (
@@ -15,9 +13,9 @@ from modules.user.services import UserService
 
 
 class EntryService:
-    def __init__(self, logger: Logger, db_session: AsyncSession, user_service: UserService):
+    def __init__(self, logger: Logger, entry_repository: EntryRepository, user_service: UserService):
         self.logger = logger
-        self._entry_repository = EntryRepository(db_session)
+        self._entry_repository = entry_repository
         self._user_service = user_service
 
     async def create(

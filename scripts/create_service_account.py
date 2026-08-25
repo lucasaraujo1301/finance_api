@@ -4,6 +4,7 @@ import sys
 
 from modules.core.database import AsyncSessionLocal, engine
 from modules.core.logger import logger
+from modules.service_account.repository import ServiceAccountRepository
 from modules.service_account.schemas import CreateServiceAccountSchema
 from modules.service_account.services import ServiceAccountService
 
@@ -11,7 +12,8 @@ from modules.service_account.services import ServiceAccountService
 async def create_service_account(name: str) -> None:
     try:
         async with AsyncSessionLocal() as session:
-            service = ServiceAccountService(logger, session)
+            repository = ServiceAccountRepository(session)
+            service = ServiceAccountService(logger, repository)
             service_account = await service.create(CreateServiceAccountSchema(name=name))
             await session.commit()
 

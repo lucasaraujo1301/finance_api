@@ -1,6 +1,5 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
-import jwt
 import pytest
 
 from fastapi.security import HTTPAuthorizationCredentials
@@ -8,49 +7,45 @@ from fastapi.security import HTTPAuthorizationCredentials
 from modules.user.dependencies import get_current_user, require_superuser
 from modules.user.exceptions import InvalidCredentials, SuperuserRequired
 from modules.user.models import UserModel
-from modules.user.services import UserService
+from modules.user.services import AuthService
 
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestUserDependencies:
-    @patch("modules.user.dependencies.jwt.decode")
-    async def test_get_current_user_returns_user(self, decode_mock, user):
-        user_service = AsyncMock(spec=UserService)
-        user_service.get_by_id.return_value = user
-        decode_mock.return_value = {"sub": str(user.id), "type": "access"}
+    async def test_get_current_user_returns_user(self, user):
+        auth_service = AsyncMock(spec=AuthService)
+        auth_service.get_user_from_jwt.return_value = user
 
         result = await get_current_user(
             HTTPAuthorizationCredentials(scheme="Bearer", credentials="access-token"),
-            user_service,
+            auth_service,
         )
 
         assert result is user
-        user_service.get_by_id.assert_awaited_once_with(str(user.id))
+        auth_service.get_user_from_jwt.assert_awaited_once_with(
+            "access-token",
+            "access",
+            InvalidCredentials,
+        )
 
-    @patch("modules.user.dependencies.jwt.decode")
-    async def test_get_current_user_rejects_invalid_token(self, decode_mock):
-        error = jwt.InvalidTokenError("Invalid token")
-        decode_mock.side_effect = error
-
+    async def test_get_current_user_rejects_missing_token(self):
         with pytest.raises(InvalidCredentials) as exc_info:
-            await get_current_user(
-                HTTPAuthorizationCredentials(scheme="Bearer", credentials="invalid-token"),
-                AsyncMock(spec=UserService),
-            )
+            await get_current_user(None, AsyncMock(spec=AuthService))
 
-        assert exc_info.value.__cause__ is error
+        assert exc_info.value.__cause__ is None
 
-    @patch("modules.user.dependencies.jwt.decode")
-    async def test_get_current_user_rejects_refresh_token(self, decode_mock):
-        decode_mock.return_value = {"sub": "user-id", "type": "refresh"}
+    async def test_get_current_user_rejects_invalid_token(self):
+        auth_service = AsyncMock(spec=AuthService)
+        error = InvalidCredentials()
+        auth_service.get_user_from_jwt.side_effect = error
 
         with pytest.raises(InvalidCredentials) as exc_info:
             await get_current_user(
                 HTTPAuthorizationCredentials(scheme="Bearer", credentials="refresh-token"),
-                AsyncMock(spec=UserService),
+                auth_service,
             )
 
-        assert isinstance(exc_info.value.__cause__, jwt.InvalidTokenError)
+        assert exc_info.value is error
 
     async def test_require_superuser_returns_superuser(self, user: UserModel):
         user.is_superuser = True

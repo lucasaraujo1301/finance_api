@@ -1,7 +1,5 @@
 from typing import Annotated
 
-import jwt
-
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pwdlib import PasswordHash
@@ -9,16 +7,20 @@ from pwdlib import PasswordHash
 from modules.core.database import AsyncDbDep
 from modules.core.logger import logger
 from modules.user.config import user_settings
-from modules.user.exceptions import InvalidCredentials, SuperuserRequired, UserNotFound
+from modules.user.exceptions import InvalidCredentials, InvalidPasswordUpdateToken, SuperuserRequired
 from modules.user.models import UserModel
+from modules.user.repository import UserRepository
 from modules.user.services import AuthService, UserService
 
 password_hash = PasswordHash.recommended()
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
-async def get_user_service(db: AsyncDbDep) -> UserService:
-    return UserService(logger, db, password_hash)
+async def get_user_repository(db: AsyncDbDep) -> UserRepository:
+    return UserRepository(db)
+
+async def get_user_service(repository: UserRepositoryDep) -> UserService:
+    return UserService(logger, repository, password_hash)
 
 
 async def get_auth_service(
@@ -29,25 +31,12 @@ async def get_auth_service(
 
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
-    user_service: UserServiceDep,
+    auth_service: AuthServiceDep,
 ) -> UserModel:
     if credentials is None:
         raise InvalidCredentials()
 
-    try:
-        payload = jwt.decode(
-            credentials.credentials,
-            user_settings.JWT_SECRET_KEY,
-            algorithms=[user_settings.JWT_ALGORITHM],
-            audience=user_settings.JWT_AUDIENCE,
-            issuer=user_settings.JWT_ISSUER,
-        )
-        if payload.get("type") != "access":
-            raise jwt.InvalidTokenError("Access token required")
-
-        return await user_service.get_by_id(payload["sub"])
-    except (jwt.InvalidTokenError, KeyError, UserNotFound) as error:
-        raise InvalidCredentials() from error
+    return await auth_service.get_user_from_jwt(credentials.credentials, "access", InvalidCredentials)
 
 
 async def require_superuser(
@@ -59,7 +48,27 @@ async def require_superuser(
     return user
 
 
+async def get_current_user_from_password_setup(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+    auth_service: AuthServiceDep,
+) -> UserModel:
+    if credentials is None:
+        raise InvalidPasswordUpdateToken()
+
+    user = await auth_service.get_user_from_jwt(
+        credentials.credentials,
+        "password_setup",
+        InvalidPasswordUpdateToken,
+    )
+    if not user.needs_password_update:
+        raise InvalidPasswordUpdateToken()
+
+    return user
+
+
 CurrentUser = Annotated[UserModel, Depends(get_current_user)]
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 Superuser = Annotated[UserModel, Depends(require_superuser)]
+PasswordSetupUser = Annotated[UserModel, Depends(get_current_user_from_password_setup)]
+UserRepositoryDep = Annotated[UserRepository, Depends(get_user_repository)]

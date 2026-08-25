@@ -1,7 +1,5 @@
 from logging import Logger
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from modules.service_account.exceptions import ServiceAccountAlreadyExists, ServiceAccountNotFound
 from modules.service_account.models import ServiceAccountModel
 from modules.service_account.repository import ServiceAccountRepository
@@ -14,9 +12,9 @@ from modules.service_account.utils import generate_api_key, hash_api_key
 
 
 class ServiceAccountService:
-    def __init__(self, logger: Logger, db_session: AsyncSession):
+    def __init__(self, logger: Logger, repository: ServiceAccountRepository):
         self.logger = logger
-        self._repository = ServiceAccountRepository(db_session)
+        self._repository = repository
 
     async def create(self, data: CreateServiceAccountSchema) -> CreatedServiceAccountSchema:
         if await self._repository.get_by_name(data.name):

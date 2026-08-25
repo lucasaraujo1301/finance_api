@@ -37,7 +37,13 @@ class InvalidRefreshToken(UserExceptions):
     status_code = status.HTTP_401_UNAUTHORIZED
 
 
-class SuperuserRequired(UserExceptions):
+class InvalidPasswordUpdateToken(UserExceptions):
     code = 6
+    message = "Invalid password update token."
+    status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class SuperuserRequired(UserExceptions):
+    code = 7
     message = "Superuser access required."
     status_code = status.HTTP_403_FORBIDDEN

@@ -7,15 +7,20 @@ from modules.core.database import AsyncDbDep
 from modules.core.logger import logger
 from modules.service_account.exceptions import ApiKeyMissing
 from modules.service_account.models import ServiceAccountModel
+from modules.service_account.repository import ServiceAccountRepository
 from modules.service_account.services import ServiceAccountService
 
 api_key_header = APIKeyHeader(name="X-API-KEY", auto_error=False)
 
 
+def get_service_account_repository(db_session: AsyncDbDep) -> ServiceAccountRepository:
+    return ServiceAccountRepository(db_session)
+
+
 async def get_service_account_service(
-    db_session: AsyncDbDep,
+    repository: Annotated[ServiceAccountRepository, Depends(get_service_account_repository)],
 ) -> ServiceAccountService:
-    return ServiceAccountService(logger, db_session)
+    return ServiceAccountService(logger, repository)
 
 
 async def get_current_service_account(
@@ -29,3 +34,7 @@ async def get_current_service_account(
 
 
 CurrentServiceAccount = Annotated[ServiceAccountModel, Depends(get_current_service_account)]
+ServiceAccountRepositoryDep = Annotated[
+    ServiceAccountRepository,
+    Depends(get_service_account_repository),
+]

@@ -6,24 +6,19 @@ import pytest
 from pwdlib import PasswordHash
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.core.logger import logger
 from modules.user.config import user_settings
-from modules.user.exceptions import InvalidCredentials, InvalidRefreshToken
+from modules.user.exceptions import InvalidCredentials, InvalidPasswordUpdateToken, InvalidRefreshToken
 from modules.user.models import UserModel
 from modules.user.schemas import LoginSchema
-from modules.user.services import AuthService, UserService
 
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestAuthService:
-    def _get_service(self, db_session: AsyncSession) -> AuthService:
-        password_hash = PasswordHash.recommended()
-        return AuthService(UserService(logger, db_session, password_hash), password_hash, user_settings)
-
-    async def test_login_returns_tokens_with_valid_claims(self, db_session: AsyncSession):
+    async def test_login_returns_tokens_with_valid_claims(self, db_session: AsyncSession, auth_service):
         password = "secret-password"
         user = UserModel(
             full_name="Alice",
+            email="alice@example.com",
             telegram_id="login-user",
             password=PasswordHash.recommended().hash(password),
             is_superuser=True,
@@ -31,7 +26,7 @@ class TestAuthService:
         db_session.add(user)
         await db_session.flush()
 
-        result = await self._get_service(db_session).login(LoginSchema(telegram_id=user.telegram_id, password=password))
+        result = await auth_service.login(LoginSchema(email=user.email, password=password))
 
         payload = jwt.decode(
             result.access_token,
@@ -45,27 +40,27 @@ class TestAuthService:
         assert result.full_name == user.full_name
         assert result.is_superuser is True
 
-    async def test_login_rejects_invalid_credentials(self, db_session: AsyncSession, user_with_password):
+    async def test_login_rejects_invalid_credentials(self, db_session: AsyncSession, user_with_password, auth_service):
         user, _ = user_with_password
 
         with pytest.raises(InvalidCredentials):
-            await self._get_service(db_session).login(
-                LoginSchema(telegram_id=user.telegram_id, password="wrong-password")
+            await auth_service.login(
+                LoginSchema(email=user.email, password="wrong-password")
             )
 
-    async def test_refresh_token_returns_new_token_pair(self, db_session: AsyncSession):
+    async def test_refresh_token_returns_new_token_pair(self, db_session: AsyncSession, auth_service):
         password = "secret-password"
         user = UserModel(
             full_name="Alice",
             telegram_id="refresh-user",
+            email="refresh@example.com",
             password=PasswordHash.recommended().hash(password),
         )
         db_session.add(user)
         await db_session.flush()
-        service = self._get_service(db_session)
-        login_result = await service.login(LoginSchema(telegram_id=user.telegram_id, password=password))
+        login_result = await auth_service.login(LoginSchema(email=user.email, password=password))
 
-        result = await service.refresh_token(login_result.refresh_token)
+        result = await auth_service.refresh_token(login_result.refresh_token)
 
         payload = jwt.decode(
             result.refresh_token,
@@ -77,19 +72,43 @@ class TestAuthService:
         assert payload["sub"] == str(user.id)
         assert payload["type"] == "refresh"
 
-    async def test_refresh_rejects_access_token(self, db_session: AsyncSession):
+    async def test_refresh_rejects_access_token(self, db_session: AsyncSession, auth_service):
         password = "secret-password"
         user = UserModel(
             telegram_id="access-token-user",
+            email="access@example.com",
             password=PasswordHash.recommended().hash(password),
         )
         db_session.add(user)
         await db_session.flush()
-        service = self._get_service(db_session)
-        login_result = await service.login(LoginSchema(telegram_id=user.telegram_id, password=password))
+        login_result = await auth_service.login(LoginSchema(email=user.email, password=password))
 
         with pytest.raises(InvalidRefreshToken):
-            await service.refresh_token(login_result.access_token)
+            await auth_service.refresh_token(login_result.access_token)
+
+    async def test_password_setup_token_resolves_only_before_password_update(
+        self,
+        db_session: AsyncSession,
+        auth_service,
+    ):
+        password = "temporary-password"
+        user = UserModel(
+            email="setup@example.com",
+            telegram_id="setup-user",
+            password=PasswordHash.recommended().hash(password),
+            needs_password_update=True,
+        )
+        db_session.add(user)
+        await db_session.flush()
+
+        setup_token = auth_service.create_password_update_url(user).split("token=", 1)[1]
+        resolved_user = await auth_service.get_user_from_jwt(
+            setup_token,
+            "password_setup",
+            InvalidPasswordUpdateToken,
+        )
+
+        assert resolved_user.id == user.id
 
     @pytest.mark.parametrize(
         ("claim", "value"),
@@ -101,6 +120,7 @@ class TestAuthService:
         user: UserModel,
         claim: str,
         value: str,
+        auth_service,
     ):
         now = datetime.now(timezone.utc)
         payload = {
@@ -115,4 +135,4 @@ class TestAuthService:
         token = jwt.encode(payload, user_settings.JWT_SECRET_KEY, algorithm=user_settings.JWT_ALGORITHM)
 
         with pytest.raises(InvalidRefreshToken):
-            await self._get_service(db_session).refresh_token(token)
+            await auth_service.refresh_token(token)

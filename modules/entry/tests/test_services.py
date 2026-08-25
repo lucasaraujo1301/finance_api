@@ -5,10 +5,8 @@ import pytest
 
 from fastapi_pagination import Params
 from fastapi_pagination.api import set_params
-from pwdlib import PasswordHash
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.core.logger import logger
 from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
 from modules.entry.models import EntryModel
 from modules.entry.schemas import (
@@ -17,21 +15,20 @@ from modules.entry.schemas import (
     EntrySummaryFilterSchema,
     TelegramEntryRequestSchema,
 )
-from modules.entry.services import EntryService
 from modules.entry.tests.fixtures.factories import EntryFactory
 from modules.service_account.models import ServiceAccountModel
 from modules.user.exceptions import UserNotFound
 from modules.user.models import UserModel
-from modules.user.services import UserService
 
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestEntryService:
-    def _get_service(self, db_session: AsyncSession) -> EntryService:
-        user_service = UserService(logger, db_session, PasswordHash.recommended())
-        return EntryService(logger, db_session, user_service)
-
-    async def test_create_persists_and_returns_entry(self, db_session: AsyncSession, user: UserModel):
+    async def test_create_persists_and_returns_entry(
+        self,
+        db_session: AsyncSession,
+        user: UserModel,
+        entry_service,
+    ):
         payment_date = date.today()
         data = EntryRequestSchema(
             amount=Decimal("10.50"),
@@ -42,9 +39,7 @@ class TestEntryService:
             payment_date=payment_date,
             is_fixed=False,
         )
-        service = self._get_service(db_session)
-
-        result = await service.create(user.id, data)
+        result = await entry_service.create(user.id, data)
 
         persisted = await db_session.get(EntryModel, result.id)
         assert persisted is not None
@@ -63,6 +58,7 @@ class TestEntryService:
         db_session: AsyncSession,
         user: UserModel,
         service_account: ServiceAccountModel,
+        entry_service,
     ):
         data = TelegramEntryRequestSchema(
             telegram_id=user.telegram_id,
@@ -70,9 +66,7 @@ class TestEntryService:
             payment_method=PaymentMethodEnum.PIX,
             category="snack",
         )
-        service = self._get_service(db_session)
-
-        result = await service.create_from_telegram(data, service_account.id)
+        result = await entry_service.create_from_telegram(data, service_account.id)
 
         assert result.user_id == user.id
         assert result.created_by_service_account_id == service_account.id
@@ -81,6 +75,7 @@ class TestEntryService:
         self,
         db_session: AsyncSession,
         service_account: ServiceAccountModel,
+        entry_service,
     ):
         data = TelegramEntryRequestSchema(
             telegram_id="unknown",
@@ -88,12 +83,15 @@ class TestEntryService:
             payment_method=PaymentMethodEnum.PIX,
             category="snack",
         )
-        service = self._get_service(db_session)
-
         with pytest.raises(UserNotFound):
-            await service.create_from_telegram(data, service_account.id)
+            await entry_service.create_from_telegram(data, service_account.id)
 
-    async def test_get_all_returns_paginated_filtered_entries(self, db_session: AsyncSession, user: UserModel):
+    async def test_get_all_returns_paginated_filtered_entries(
+        self,
+        db_session: AsyncSession,
+        user: UserModel,
+        entry_service,
+    ):
         EntryFactory.__async_session__ = db_session
         matching_entry = await EntryFactory.create_async(user=user, category="snack")
         await EntryFactory.create_async(user=user, category="transport")
@@ -105,14 +103,17 @@ class TestEntryService:
             entry_type=None,
         )
         set_params(Params(page=1, size=50))
-        service = self._get_service(db_session)
-
-        result = await service.get_all(user.id, filters)
+        result = await entry_service.get_all(user.id, filters)
 
         assert result.total == 1
         assert [entry.id for entry in result.items] == [matching_entry.id]
 
-    async def test_get_summary_returns_entry_aggregates(self, db_session: AsyncSession, user: UserModel):
+    async def test_get_summary_returns_entry_aggregates(
+        self,
+        db_session: AsyncSession,
+        user: UserModel,
+        entry_service,
+    ):
         EntryFactory.__async_session__ = db_session
         await EntryFactory.create_async(
             user=user,
@@ -120,9 +121,7 @@ class TestEntryService:
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
-        service = self._get_service(db_session)
-
-        result = await service.get_summary(user.id, EntrySummaryFilterSchema())
+        result = await entry_service.get_summary(user.id, EntrySummaryFilterSchema())
 
         assert result.balance == Decimal("-10.00")
         assert result.current_balance == Decimal("-10.00")

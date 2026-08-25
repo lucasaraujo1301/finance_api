@@ -16,7 +16,12 @@ class TestUserRouter(AuthRequestMixin):
             client,
             admin_user,
             path="/",
-            json={"full_name": "alice", "telegram_id": "111", "password": "secret-password"},
+            json={
+                "full_name": "alice",
+                "email": "alice@example.com",
+                "telegram_id": "111",
+                "password": "secret-password",
+            },
         )
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -30,7 +35,12 @@ class TestUserRouter(AuthRequestMixin):
             client,
             admin_user,
             path="/",
-            json={"full_name": "Test API", "telegram_id": user.telegram_id, "password": "secret-password"},
+            json={
+                "full_name": "Test API",
+                "email": "duplicate@example.com",
+                "telegram_id": user.telegram_id,
+                "password": "secret-password",
+            },
         )
         assert response.status_code == status.HTTP_409_CONFLICT
         assert response.json()["success"] is False
@@ -41,7 +51,12 @@ class TestUserRouter(AuthRequestMixin):
             client,
             user,
             path="/",
-            json={"full_name": "alice", "telegram_id": "111", "password": "secret-password"},
+            json={
+                "full_name": "alice",
+                "email": "alice@example.com",
+                "telegram_id": "111",
+                "password": "secret-password",
+            },
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -55,13 +70,16 @@ class TestUserRouter(AuthRequestMixin):
             client,
             path="/telegram",
             headers={"X-API-KEY": raw_key},
-            json={"full_name": "Telegram User", "telegram_id": "222"},
+            json={"full_name": "Telegram User", "email": "telegram@example.com", "telegram_id": "222"},
         )
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json()["success"] is True
         assert response.json()["data"]["full_name"] == "Telegram User"
         assert response.json()["data"]["telegram_id"] == "222"
+        assert response.json()["data"]["password_update_url"].startswith(
+            "http://localhost:3000/reset-password?token="
+        )
         assert "password" not in response.json()["data"]
 
     async def test_create_telegram_user_requires_service_account(self, client):
@@ -69,7 +87,7 @@ class TestUserRouter(AuthRequestMixin):
             client,
             path="/telegram",
             headers=None,
-            json={"full_name": "Telegram User", "telegram_id": "222"},
+            json={"full_name": "Telegram User", "email": "telegram@example.com", "telegram_id": "222"},
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -113,13 +131,14 @@ class TestAuthRouter:
 
         login_response = await client.post(
             f"{self.base_url}/login",
-            json={"telegram_id": user.telegram_id, "password": password},
+            json={"email": user.email, "password": password},
         )
 
         assert login_response.status_code == status.HTTP_200_OK
         assert login_response.json()["success"] is True
         assert login_response.json()["data"]["full_name"] == user.full_name
         assert login_response.json()["data"]["is_superuser"] is user.is_superuser
+        assert "password_update_token" not in login_response.json()["data"]
 
         refresh_response = await client.post(
             f"{self.base_url}/refresh",
@@ -130,3 +149,33 @@ class TestAuthRouter:
         assert refresh_response.json()["success"] is True
         assert refresh_response.json()["data"]["access_token"]
         assert refresh_response.json()["data"]["refresh_token"]
+
+    async def test_password_setup_token_updates_password_once(
+        self,
+        client,
+        db_session,
+        user_with_password,
+        auth_service,
+    ):
+        user, _ = user_with_password
+        user.needs_password_update = True
+        await db_session.flush()
+
+        setup_token = auth_service.create_password_update_url(user).split("token=", 1)[1]
+
+        response = await client.patch(
+            "/api/v1/users/password",
+            headers={"Authorization": f"Bearer {setup_token}"},
+            json={"password": "new-password"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert user.needs_password_update is False
+
+        replay_response = await client.patch(
+            "/api/v1/users/password",
+            headers={"Authorization": f"Bearer {setup_token}"},
+            json={"password": "another-password"},
+        )
+
+        assert replay_response.status_code == status.HTTP_401_UNAUTHORIZED
