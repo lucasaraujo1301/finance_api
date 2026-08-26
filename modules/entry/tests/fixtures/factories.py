@@ -19,5 +19,4 @@ class EntryFactory(BaseFactory[EntryModel]):
     category = Use(SQLAlchemyFactory.__faker__.word)
     description = Use(SQLAlchemyFactory.__faker__.sentence)
     payment_date = Use(lambda: datetime.date.today())
-    is_fixed = False
     created_by_service_account_id = None

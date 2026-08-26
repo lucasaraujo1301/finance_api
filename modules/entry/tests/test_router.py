@@ -37,7 +37,6 @@ class TestEntryRouter(AuthRequestMixin):
             "category": "snack",
             "description": "Lunch",
             "payment_date": payload["payment_date"],
-            "is_fixed": False,
             "created_at": response.json()["data"]["created_at"],
             "updated_at": None,
             "deleted_at": None,
@@ -82,7 +81,6 @@ class TestEntryRouter(AuthRequestMixin):
                 "entry_type": "credit",
                 "description": None,
                 "payment_date": "2012-01-25",
-                "is_fixed": False,
             },
         )
 
@@ -140,7 +138,6 @@ class TestEntryRouter(AuthRequestMixin):
             "category": "snack",
             "description": "Lunch",
             "payment_date": payload["payment_date"],
-            "is_fixed": False,
             "created_at": response.json()["data"]["created_at"],
             "updated_at": None,
             "deleted_at": None,

@@ -1,10 +1,12 @@
+from uuid import uuid4
+
 import pytest
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.user.exceptions import UserAlreadyExistException, UserNotFound
 from modules.user.models import UserModel
-from modules.user.schemas import CreateUserSchema, PatchUserSchema, TelegramUserCreateSchema
+from modules.user.schemas import CreateUserSchema, PasswordUpdateSchema, PatchUserSchema, TelegramUserCreateSchema
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -78,6 +80,14 @@ class TestUserService:
         with pytest.raises(UserNotFound, match=UserNotFound().message):
             await user_service.get_by_telegram_id("missing")
 
+    async def test_get_by_email_raises_when_user_not_found(self, db_session: AsyncSession, user_service):
+        with pytest.raises(UserNotFound, match=UserNotFound().message):
+            await user_service.get_by_email("missing@example.com")
+
+    async def test_get_by_id_raises_when_user_not_found(self, db_session: AsyncSession, user_service):
+        with pytest.raises(UserNotFound, match=UserNotFound().message):
+            await user_service.get_by_id(uuid4())
+
     async def test_update_user_persists_full_name(self, db_session: AsyncSession, user: UserModel, user_service):
         result = await user_service.update_user(user, PatchUserSchema(full_name="Updated Name"))
 
@@ -100,3 +110,25 @@ class TestUserService:
         assert result.full_name == original_name
         assert result.password != "new-secret-password"
         assert password_hash.verify("new-secret-password", result.password)
+
+    async def test_update_user_persists_email(self, db_session: AsyncSession, user: UserModel, user_service):
+        result = await user_service.update_user(user, PatchUserSchema(email="updated@example.com"))
+
+        persisted = await db_session.get(UserModel, user.id)
+        assert result.email == "updated@example.com"
+        assert persisted is not None
+        assert persisted.email == "updated@example.com"
+
+    async def test_update_password_hashes_password_and_clears_required_update(
+        self,
+        user: UserModel,
+        user_service,
+        password_hash,
+    ):
+        user.needs_password_update = True
+
+        result = await user_service.update_password(user, PasswordUpdateSchema(password="updated-password"))
+
+        assert result.needs_password_update is False
+        assert result.password != "updated-password"
+        assert password_hash.verify("updated-password", result.password)

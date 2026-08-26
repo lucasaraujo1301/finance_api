@@ -3,7 +3,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi_pagination.ext.sqlalchemy import apaginate
-from sqlalchemy import Date, Interval, case, cast, func, literal, select, true
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.core.repositories import BaseRepository
@@ -36,91 +36,57 @@ class EntryRepository(BaseRepository[EntryModel]):
 
     async def get_summary(self, user_id: UUID, query_params: EntrySummaryFilterSchema) -> EntrySummarySchema:
         end_date = query_params.end_date or date.today()
-        entries_statement = select(EntryModel).where(
+
+        signed_amount = case(
+            (EntryModel.entry_type == EntryTypeEnum.CREDIT, EntryModel.amount),
+            else_=-EntryModel.amount,
+        )
+        base_filters = (
             EntryModel.user_id == user_id,
             EntryModel.deleted_at.is_(None),
         )
-        entries = entries_statement.cte("summary_entries")
 
-        one_month = cast(literal("1 month"), Interval)
-        one_day = cast(literal("1 day"), Interval)
-        months = (
-            func.generate_series(
-                func.date_trunc("month", entries.c.payment_date),
-                func.date_trunc("month", end_date),
-                one_month,
-            )
-            .table_valued("month_start")
-            .render_derived()
-            .lateral()
+        balance_statement = select(func.coalesce(func.sum(signed_amount), 0)).where(
+            *base_filters,
+            EntryModel.payment_date <= end_date,
         )
-        last_day = func.date_trunc("month", months.c.month_start) + one_month - one_day
-        occurrence_date = cast(
-            months.c.month_start
-            + (func.least(func.extract("day", entries.c.payment_date), func.extract("day", last_day)) - 1) * one_day,
-            Date,
-        )
-        recurring_entries = (
-            select(
-                entries.c.amount,
-                entries.c.entry_type,
-                entries.c.payment_method,
-                entries.c.category,
-                occurrence_date.label("occurrence_date"),
-            )
-            .select_from(entries.join(months, true()))
-            .where(entries.c.is_fixed.is_(True), occurrence_date >= entries.c.payment_date)
-        )
-        one_time_entries = select(
-            entries.c.amount,
-            entries.c.entry_type,
-            entries.c.payment_method,
-            entries.c.category,
-            entries.c.payment_date.label("occurrence_date"),
-        ).where(entries.c.is_fixed.is_(False))
-        occurrences = recurring_entries.union_all(one_time_entries).cte("entry_occurrences")
-
-        signed_amount = case(
-            (occurrences.c.entry_type == EntryTypeEnum.CREDIT, occurrences.c.amount),
-            else_=-occurrences.c.amount,
-        )
-        balance = await self._session.scalar(
-            select(func.coalesce(func.sum(signed_amount), 0)).where(
-                occurrences.c.occurrence_date <= end_date,
-            )
-        )
+        balance = await self._session.scalar(balance_statement)
 
         last_balance = None
         if query_params.start_date:
-            last_balance = await self._session.scalar(
-                select(func.coalesce(func.sum(signed_amount), 0)).where(
-                    occurrences.c.occurrence_date < query_params.start_date,
-                )
+            last_balance_statement = select(func.coalesce(func.sum(signed_amount), 0)).where(
+                *base_filters,
+                EntryModel.payment_date < query_params.start_date,
             )
+            last_balance = await self._session.scalar(last_balance_statement)
 
         current_balance_statement = select(func.coalesce(func.sum(signed_amount), 0)).where(
-            occurrences.c.occurrence_date <= end_date
+            *base_filters,
+            EntryModel.payment_date <= end_date,
         )
         if query_params.start_date:
             current_balance_statement = current_balance_statement.where(
-                occurrences.c.occurrence_date >= query_params.start_date
+                EntryModel.payment_date >= query_params.start_date
             )
         current_balance = await self._session.scalar(current_balance_statement)
 
         analytics_statement = select(
             *(
-                func.count().filter(occurrences.c.entry_type == entry_type).label(f"entry_type_{entry_type.value}")
+                func.count().filter(EntryModel.entry_type == entry_type).label(f"entry_type_{entry_type.value}")
                 for entry_type in EntryTypeEnum
             ),
             *(
                 func.count()
-                .filter(occurrences.c.payment_method == payment_method)
+                .filter(EntryModel.payment_method == payment_method)
                 .label(f"payment_method_{payment_method.value}")
                 for payment_method in PaymentMethodEnum
             ),
-        ).where(occurrences.c.occurrence_date <= end_date)
+        ).where(
+            *base_filters,
+            EntryModel.payment_date <= end_date,
+        )
         if query_params.start_date:
-            analytics_statement = analytics_statement.where(occurrences.c.occurrence_date >= query_params.start_date)
+            analytics_statement = analytics_statement.where(EntryModel.payment_date >= query_params.start_date)
         analytics = (await self._session.execute(analytics_statement)).one()
 
         return EntrySummarySchema(

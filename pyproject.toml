@@ -38,9 +38,11 @@ include = ["modules*", "scripts*"]
 
 [dependency-groups]
 dev = [
+    "coverage>=7.15.4",
     "polyfactory>=3.3.0",
     "pre-commit>=4.6.0",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "pytest-env>=1.6.0",
     "ruff>=0.15.20",
     "ty>=0.0.56",
@@ -104,6 +106,11 @@ asyncio_default_fixture_loop_scope = "session"
 
 [tool.pytest_env]
 ENVIRONMENT = "test"
+
+[tool.coverage.run]
+omit = [
+    "*/tests/*",
+]
 
 [[tool.babel.mappings]]
 method = "python"

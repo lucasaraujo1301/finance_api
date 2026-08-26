@@ -17,13 +17,11 @@ class BaseEntrySchema(BaseSchema):
     category: str
     description: str | None
     payment_date: date
-    is_fixed: bool
 
 
 class EntryRequestSchema(BaseEntrySchema):
     entry_type: EntryType = EntryTypeEnum.DEBIT
     payment_date: date = Field(default_factory=date.today)
-    is_fixed: bool = False
     category: str = Field(max_length=125)
     description: str | None = Field(default=None, max_length=255)
 

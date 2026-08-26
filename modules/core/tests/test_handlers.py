@@ -1,8 +1,12 @@
+from types import SimpleNamespace
+from unittest.mock import Mock
+
 import pytest
 
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError
 
+from modules.core import handlers
 from modules.core.expcetion import BaseException, Modules, SystemException, ValidationException
 from modules.core.handlers import register_exception_handlers
 
@@ -82,6 +86,17 @@ class TestExceptionHandlers:
                     "detail": None,
                 },
             }
+
+    async def test_unhandled_exception_logs_outside_test_environment(self, client_factory, test_app, monkeypatch):
+        logger_exception = Mock()
+        monkeypatch.setattr(handlers, "settings", SimpleNamespace(ENVIRONMENT="local"))
+        monkeypatch.setattr(handlers.logger, "exception", logger_exception)
+
+        async with client_factory(test_app, raise_server_exceptions=False) as client:
+            response = await client.get("/server_error")
+
+        assert response.status_code == 500
+        logger_exception.assert_called_once()
 
     async def test_base_exception_handler(self, client_factory, test_app):
         expect = {

@@ -46,6 +46,10 @@ class TestAuthService:
         with pytest.raises(InvalidCredentials):
             await auth_service.login(LoginSchema(email=user.email, password="wrong-password"))
 
+    async def test_login_rejects_unknown_email(self, db_session: AsyncSession, auth_service):
+        with pytest.raises(InvalidCredentials):
+            await auth_service.login(LoginSchema(email="missing@example.com", password="secret-password"))
+
     async def test_refresh_token_returns_new_token_pair(self, db_session: AsyncSession, auth_service):
         password = "secret-password"
         user = UserModel(
@@ -83,6 +87,33 @@ class TestAuthService:
 
         with pytest.raises(InvalidRefreshToken):
             await auth_service.refresh_token(login_result.access_token)
+
+    async def test_refresh_rejects_malformed_token(self, auth_service):
+        with pytest.raises(InvalidRefreshToken):
+            await auth_service.refresh_token("not-a-jwt")
+
+    async def test_refresh_rejects_token_without_subject(self, auth_service):
+        now = datetime.now(timezone.utc)
+        token = jwt.encode(
+            {
+                "type": "refresh",
+                "iss": user_settings.JWT_ISSUER,
+                "aud": user_settings.JWT_AUDIENCE,
+                "iat": now,
+                "exp": now + timedelta(minutes=5),
+            },
+            user_settings.JWT_SECRET_KEY,
+            algorithm=user_settings.JWT_ALGORITHM,
+        )
+
+        with pytest.raises(InvalidRefreshToken):
+            await auth_service.refresh_token(token)
+
+    async def test_get_user_from_jwt_rejects_wrong_token_type(self, db_session: AsyncSession, user, auth_service):
+        token = auth_service.create_password_update_url(user).split("token=", 1)[1]
+
+        with pytest.raises(InvalidCredentials):
+            await auth_service.get_user_from_jwt(token, "access", InvalidCredentials)
 
     async def test_password_setup_token_resolves_only_before_password_update(
         self,

@@ -4,8 +4,8 @@ import pytest
 
 from fastapi.security import HTTPAuthorizationCredentials
 
-from modules.user.dependencies import get_current_user, require_superuser
-from modules.user.exceptions import InvalidCredentials, SuperuserRequired
+from modules.user.dependencies import get_current_user, get_current_user_from_password_setup, require_superuser
+from modules.user.exceptions import InvalidCredentials, InvalidPasswordUpdateToken, SuperuserRequired
 from modules.user.models import UserModel
 from modules.user.services import AuthService
 
@@ -57,3 +57,35 @@ class TestUserDependencies:
 
         with pytest.raises(SuperuserRequired):
             await require_superuser(user)
+
+    async def test_get_current_user_from_password_setup_returns_user_with_pending_update(self, user: UserModel):
+        user.needs_password_update = True
+        auth_service = AsyncMock(spec=AuthService)
+        auth_service.get_user_from_jwt.return_value = user
+
+        result = await get_current_user_from_password_setup(
+            HTTPAuthorizationCredentials(scheme="Bearer", credentials="setup-token"),
+            auth_service,
+        )
+
+        assert result is user
+        auth_service.get_user_from_jwt.assert_awaited_once_with(
+            "setup-token",
+            "password_setup",
+            InvalidPasswordUpdateToken,
+        )
+
+    async def test_get_current_user_from_password_setup_rejects_missing_token(self):
+        with pytest.raises(InvalidPasswordUpdateToken):
+            await get_current_user_from_password_setup(None, AsyncMock(spec=AuthService))
+
+    async def test_get_current_user_from_password_setup_rejects_user_without_pending_update(self, user: UserModel):
+        user.needs_password_update = False
+        auth_service = AsyncMock(spec=AuthService)
+        auth_service.get_user_from_jwt.return_value = user
+
+        with pytest.raises(InvalidPasswordUpdateToken):
+            await get_current_user_from_password_setup(
+                HTTPAuthorizationCredentials(scheme="Bearer", credentials="setup-token"),
+                auth_service,
+            )

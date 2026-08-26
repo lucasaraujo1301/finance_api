@@ -37,7 +37,6 @@ class TestEntryService:
             category="snack",
             description="Lunch",
             payment_date=payment_date,
-            is_fixed=False,
         )
         result = await entry_service.create(user.id, data)
 
@@ -51,7 +50,6 @@ class TestEntryService:
         assert result.category == "snack"
         assert result.description == "Lunch"
         assert result.payment_date == payment_date
-        assert result.is_fixed is False
 
     async def test_create_from_telegram_validates_user_and_delegates_creation(
         self,
