@@ -8,7 +8,7 @@ from modules.user.config import UserSettings
 from modules.user.exceptions import InvalidCredentials, InvalidRefreshToken, UserNotFound
 from modules.user.models import UserModel
 from modules.user.schemas import LoginSchema, TokenSchema, UserSchema
-from modules.user.services.UserService import UserService
+from modules.user.services.user_service import UserService
 from modules.user.tokens import create_access_token
 
 
