@@ -11,7 +11,7 @@ class AuthRequestMixin:
     base_url = ""
 
     def _generate_jwt(self, user: UserModel) -> str:
-        return create_access_token(user, user_settings)
+        return create_access_token(user.id, user_settings)
 
     async def auth_request(
         self,

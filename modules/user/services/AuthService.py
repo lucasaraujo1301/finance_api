@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta, timezone
-from uuid import UUID
+from datetime import timedelta
 
 import jwt
 
@@ -49,21 +48,23 @@ class AuthService:
 
     def _create_token_response(self, user: UserModel) -> TokenSchema:
         return TokenSchema(
-            access_token=create_access_token(user, self._settings),
-            refresh_token=self._create_token(
+            access_token=create_access_token(user.id, self._settings),
+            refresh_token=create_access_token(
                 user.id,
-                "refresh",
-                timedelta(days=self._settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS),
+                self._settings,
+                token_type="refresh",
+                expires_delta=timedelta(days=self._settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS),
             ),
             full_name=user.full_name,
             is_superuser=user.is_superuser,
         )
 
     def create_password_update_url(self, user: UserSchema) -> str:
-        token = self._create_token(
+        token = create_access_token(
             user.id,
-            "password_setup",
-            timedelta(minutes=self._settings.JWT_PASSWORD_UPDATE_TOKEN_EXPIRE_MINUTES),
+            self._settings,
+            token_type="password_setup",
+            expires_delta=timedelta(minutes=self._settings.JWT_PASSWORD_UPDATE_TOKEN_EXPIRE_MINUTES),
         )
         return f"http://localhost:3000/reset-password?token={token}"
 
@@ -88,18 +89,3 @@ class AuthService:
             raise invalid_token_exception() from err
 
         return user
-
-    def _create_token(self, user_id: UUID, token_type: str, expires_delta: timedelta) -> str:
-        now = datetime.now(timezone.utc)
-        return jwt.encode(
-            {
-                "sub": str(user_id),
-                "type": token_type,
-                "iss": self._settings.JWT_ISSUER,
-                "aud": self._settings.JWT_AUDIENCE,
-                "iat": now,
-                "exp": now + expires_delta,
-            },
-            self._settings.JWT_SECRET_KEY,
-            algorithm=self._settings.JWT_ALGORITHM,
-        )
