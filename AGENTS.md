@@ -35,8 +35,8 @@ update it here — don't leave it implicit.
 
 ## 2. Required structure for a module
 
-Every new module created under `modules/<name>/` **must follow exactly**
-this skeleton (even if some files start out empty/minimal):
+Every new module created under `modules/<name>/` **must follow this
+shape** (even if some files start out empty/minimal):
 
 ```
 modules/<name>/
@@ -44,12 +44,37 @@ modules/<name>/
 │   ├── __init__.py
 │   └── ...              # integration, service, repository tests, etc.
 ├── router.py             # Endpoints (APIRouter) — must not contain business logic
-├── models.py             # ORM models (SQLAlchemy), inherit from the Base in core
-├── services.py            # Business logic / orchestration
+├── models.py             # ORM models, or models/ package for multiple models
+├── services.py            # Business logic, or services/ package for multiple services
 ├── repository.py         # Data access (queries), isolates the ORM
 ├── schemas.py             # Pydantic (request/response)
 └── dependencies.py       # Depends() providers + their Annotated aliases
 ```
+
+For simple modules with one meaningful model or service, prefer flat files:
+`models.py` and `services.py`. When a module has more than one meaningful
+model or service, it may replace that file with a package split by domain
+concept:
+
+```
+modules/<name>/models/
+├── __init__.py            # Public exports for the model layer
+├── <concept>.py
+└── ...
+
+modules/<name>/services/
+├── __init__.py            # Public exports for the service layer
+├── <concept>.py
+└── ...
+```
+
+Do not use both `models.py` and `models/`, or both `services.py` and
+`services/`, in the same module. The package `__init__.py` is the public
+surface for that layer and must re-export the names used by the rest of the
+module. Splitting is justified when distinct concepts would otherwise make a
+single file harder to scan (for example, `EntryModel` and `RecurrenceModel`
+inside a finance module); do not split tiny one-concept modules such as
+`service_account` just for symmetry.
 
 **Exception:** `router.py` may be omitted for a module with no public HTTP
 surface of its own — one that exists purely to be depended on by other
@@ -64,14 +89,14 @@ Responsibility of each layer:
 | File | Can import from | Must not contain |
 |---|---|---|
 | `router.py` | own module's `schemas`, `dependencies`, `services`; **another module's `dependencies.py` aliases only** (e.g. `CurrentUser`, `CurrentServiceAccount`) | SQL queries, business logic, manual instantiation of any dependency |
-| `services.py` | own module's `repository`, `schemas`, `enums`/`types`; `core`; cross-module imports **only** for type annotations (e.g. referencing another module's Pydantic schema or ORM model class in a signature) | ORM/SQL details, cross-module imports used to construct or call anything at runtime |
+| `services.py` or `services/` | own module's `repository`, `schemas`, `enums`/`types`; `core`; cross-module imports **only** for type annotations (e.g. referencing another module's Pydantic schema or ORM model class in a signature) | ORM/SQL details, cross-module imports used to construct or call anything at runtime |
 | `repository.py` | own module's `models`, `schemas`, `enums`/`types`; `core.database`; cross-module imports **only** for type annotations | business logic, cross-module imports used to construct or call anything at runtime |
 | `schemas.py` | own module's `enums`/`types`; `core` (base types) | logic |
-| `models.py` | own module's `enums`/`types`; `core.models` (Base) | business logic |
+| `models.py` or `models/` | own module's `enums`/`types`; `core.models` (Base) | business logic |
 | `dependencies.py` | own module's `repository`, `services`, `core`; **another module's `dependencies.py` aliases only** | endpoints, manual instantiation of cross-module dependencies |
 
 The two "cross-module imports only for type annotations" cells above are a
-narrow exception, not a backdoor: a `services.py` or `repository.py` may
+narrow exception, not a backdoor: a service file/package or `repository.py` may
 import a name from another module purely to type-hint a parameter or
 return value, but must never call a function, instantiate a class, or
 otherwise execute anything from that import. Any cross-module value a
@@ -79,8 +104,7 @@ service or repository actually *uses* at runtime must arrive as a
 parameter injected from `dependencies.py` (see section 2a) — never
 imported and invoked directly. In practice this exception is rarely
 needed; most cross-module dependencies flow entirely through
-`dependencies.py` and never touch `services.py`/`repository.py` imports at
-all.
+`dependencies.py` and never touch service/repository imports at all.
 
 `core/` provides cross-cutting primitives: `config.py`, `database.py`
 (engine/session), `models.py` (declarative Base), `schemas.py` (base
@@ -169,8 +193,9 @@ sanctioned way one module depends on another — whether that's a
    `conftest.py` inherited from `core/tests/conftest.py`).
 3. Register the new module's `router.py` in `main.py`, following the same
    inclusion pattern used for `user` and `entry`.
-4. If a new table is needed, create the model in `models.py` inheriting from
-   the Base in `core/models.py`, then generate the migration via Alembic
+4. If a new table is needed, create the model in `models.py` or in the
+   appropriate file under `models/`, inheriting from the Base in
+   `core/models.py`. Then generate the migration via Alembic
    (`alembic revision --autogenerate`) — never edit `migrations/` by hand.
 5. Never duplicate infrastructure logic. Logging belongs in `core/`.
    Pagination is used directly from the third-party `fastapi_pagination`
@@ -198,8 +223,9 @@ module's `dependencies.py` aliases — see below and section 2a. An agent
 should never read "modules must not import each other" as a blanket rule;
 always check the graph in section 1 first.
 
-- A module **must not directly import** `router.py`, `services.py`,
-  `repository.py`, or `models.py` from another feature module.
+- A module **must not directly import** `router.py`, `services.py` or
+  `services/`, `repository.py`, or `models.py` or `models/` from another
+  feature module.
 - The **only** permitted cross-module *runtime* import — an import whose
   result is actually called, instantiated, or otherwise executed — is
   another module's `dependencies.py`, specifically its `Annotated` aliases
@@ -225,15 +251,16 @@ check:**
    `modules/Y`? If so, **do not add the import** — refactor into `core/` or
    into a one-directional interface instead.
 2. Is the import coming from `X`'s `dependencies.py`? If it's coming from
-   `services.py`, `repository.py`, or `models.py` instead, refactor: expose
-   what's needed as a `Depends()` provider (with its `Annotated` alias) in
-   `X`'s `dependencies.py` instead of importing the internal layer directly.
+   `services.py`/`services/`, `repository.py`, or `models.py`/`models/`
+   instead, refactor: expose what's needed as a `Depends()` provider (with
+   its `Annotated` alias) in `X`'s `dependencies.py` instead of importing the
+   internal layer directly.
 
 All dependency resolution happens through FastAPI's `Depends()` system —
 nowhere in the codebase is a service, repository, or cross-module
 dependency manually instantiated or resolved by calling a provider function
-directly. As noted in section 2, a `services.py` or `repository.py` may
-import a cross-module name for a type annotation only; it must never call
+directly. As noted in section 2, a service file/package or `repository.py`
+may import a cross-module name for a type annotation only; it must never call
 or instantiate that import. Any cross-module value actually used at
 runtime arrives as an injected parameter (see section 2a for the full
 mechanics).
