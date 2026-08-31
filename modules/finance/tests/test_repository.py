@@ -48,8 +48,8 @@ class TestEntryRepository:
         UserFactory.__async_session__ = db_session
         EntryFactory.__async_session__ = db_session
         other_user = await UserFactory.create_async()
-        second_entry = await EntryFactory.create_async(user=user, amount=Decimal("100.00"))
-        await EntryFactory.create_async(user=other_user, amount=Decimal("9.99"))
+        second_entry = await EntryFactory.create_async(user_id=user.id, amount=Decimal("100.00"))
+        await EntryFactory.create_async(user_id=other_user.id, amount=Decimal("9.99"))
 
         result = await EntryRepository(db_session).get_by_user_id(user.id)
 
@@ -72,42 +72,42 @@ class TestEntryRepository:
         UserFactory.__async_session__ = db_session
         today = datetime.date.today()
         matching_entry = await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             payment_date=today - datetime.timedelta(days=2),
             category="snack",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             payment_date=today - datetime.timedelta(days=10),
             category="snack",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             payment_date=today - datetime.timedelta(days=2),
             category="transport",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             payment_date=today - datetime.timedelta(days=2),
             category="snack",
             entry_type=EntryTypeEnum.CREDIT,
             payment_method=PaymentMethodEnum.PIX,
         )
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             payment_date=today - datetime.timedelta(days=2),
             category="snack",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.CASH,
         )
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             payment_date=today - datetime.timedelta(days=2),
             category="snack",
             entry_type=EntryTypeEnum.DEBIT,
@@ -116,7 +116,7 @@ class TestEntryRepository:
         )
         other_user = await UserFactory.create_async()
         await EntryFactory.create_async(
-            user=other_user,
+            user_id=other_user.id,
             payment_date=today - datetime.timedelta(days=2),
             category="snack",
             entry_type=EntryTypeEnum.DEBIT,
@@ -143,17 +143,17 @@ class TestEntryRepository:
     ):
         EntryFactory.__async_session__ = db_session
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.CASH,
         )
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             entry_type=EntryTypeEnum.CREDIT,
             payment_method=PaymentMethodEnum.PIX,
         )
@@ -180,28 +180,28 @@ class TestEntryRepository:
         start_date = datetime.date.today() - datetime.timedelta(days=10)
         end_date = datetime.date.today() - datetime.timedelta(days=1)
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             payment_date=start_date - datetime.timedelta(days=1),
             amount=Decimal("100.00"),
             entry_type=EntryTypeEnum.DEBIT,
             category="other",
         )
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             payment_date=start_date,
             amount=Decimal("250.00"),
             entry_type=EntryTypeEnum.CREDIT,
             category="other",
         )
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             payment_date=end_date,
             amount=Decimal("50.00"),
             entry_type=EntryTypeEnum.DEBIT,
             category="other",
         )
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             payment_date=end_date + datetime.timedelta(days=1),
             amount=Decimal("500.00"),
             entry_type=EntryTypeEnum.CREDIT,

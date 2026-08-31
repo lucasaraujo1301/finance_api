@@ -91,8 +91,8 @@ class TestEntryService:
         entry_service,
     ):
         EntryFactory.__async_session__ = db_session
-        matching_entry = await EntryFactory.create_async(user=user, category="snack")
-        await EntryFactory.create_async(user=user, category="transport")
+        matching_entry = await EntryFactory.create_async(user_id=user.id, category="snack")
+        await EntryFactory.create_async(user_id=user.id, category="transport")
         filters = EntryFilterSchema(
             start_date=None,
             end_date=None,
@@ -114,7 +114,7 @@ class TestEntryService:
     ):
         EntryFactory.__async_session__ = db_session
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             amount=Decimal("10.00"),
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,

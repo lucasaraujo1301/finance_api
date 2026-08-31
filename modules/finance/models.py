@@ -31,4 +31,3 @@ class EntryModel(Base):
         ForeignKey("service_accounts.id"),
         nullable=True,
     )
-    user: Mapped[UserModel] = relationship()

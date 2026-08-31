@@ -153,21 +153,21 @@ class TestEntryRouter(AuthRequestMixin):
         EntryFactory.__async_session__ = db_session
         today = date.today()
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             payment_date=today - timedelta(days=2),
             category="snack",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
         newer_entry = await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             payment_date=today - timedelta(days=1),
             category="snack",
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             payment_date=today - timedelta(days=1),
             category="transport",
             entry_type=EntryTypeEnum.DEBIT,
@@ -223,12 +223,12 @@ class TestEntryRouter(AuthRequestMixin):
     async def test_get_entries_summary_returns_analytics(self, client, db_session, user):
         EntryFactory.__async_session__ = db_session
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             entry_type=EntryTypeEnum.DEBIT,
             payment_method=PaymentMethodEnum.PIX,
         )
         await EntryFactory.create_async(
-            user=user,
+            user_id=user.id,
             entry_type=EntryTypeEnum.CREDIT,
             payment_method=PaymentMethodEnum.CASH,
         )
@@ -251,8 +251,8 @@ class TestEntryRouter(AuthRequestMixin):
 
     async def test_get_entries_summary_ignores_entry_filters(self, client, db_session, user):
         EntryFactory.__async_session__ = db_session
-        await EntryFactory.create_async(user=user, category="other", entry_type=EntryTypeEnum.CREDIT)
-        await EntryFactory.create_async(user=user, category="snack", entry_type=EntryTypeEnum.DEBIT)
+        await EntryFactory.create_async(user_id=user.id, category="other", entry_type=EntryTypeEnum.CREDIT)
+        await EntryFactory.create_async(user_id=user.id, category="snack", entry_type=EntryTypeEnum.DEBIT)
 
         response = await self.auth_get(
             client,
