@@ -1,4 +1,4 @@
 from modules.core.tests.fixtures import *
-from modules.entry.tests.fixtures import *
+from modules.finance.tests.fixtures import *
 from modules.service_account.tests.fixtures import *
 from modules.user.tests.fixtures import *

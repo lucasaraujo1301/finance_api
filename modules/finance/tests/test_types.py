@@ -2,8 +2,8 @@ import pytest
 
 from pydantic import TypeAdapter, ValidationError
 
-from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
-from modules.entry.types import EntryType, PaymentMethod
+from modules.finance.enums import EntryTypeEnum, PaymentMethodEnum
+from modules.finance.types import EntryType, PaymentMethod
 
 entry_type_adapter = TypeAdapter(EntryType)
 payment_method_adapter = TypeAdapter(PaymentMethod)

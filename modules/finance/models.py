@@ -6,7 +6,7 @@ from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from modules.core.models import Base
-from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
+from modules.finance.enums import EntryTypeEnum, PaymentMethodEnum
 from modules.user.models import UserModel
 
 

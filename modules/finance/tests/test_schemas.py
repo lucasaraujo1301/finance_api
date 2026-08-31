@@ -5,8 +5,8 @@ import pytest
 
 from pydantic import ValidationError
 
-from modules.entry.enums import PaymentMethodEnum
-from modules.entry.schemas import EntryFilterSchema, EntryRequestSchema
+from modules.finance.enums import PaymentMethodEnum
+from modules.finance.schemas import EntryFilterSchema, EntryRequestSchema
 
 
 @pytest.mark.parametrize("payment_date", [date.today(), date.today() - timedelta(days=1)])

@@ -1,9 +1,9 @@
 from logging import Logger
 from uuid import UUID
 
-from modules.entry.models import EntryModel
-from modules.entry.repository import EntryRepository
-from modules.entry.schemas import (
+from modules.finance.models import EntryModel
+from modules.finance.repository import EntryRepository
+from modules.finance.schemas import (
     EntryFilterSchema,
     EntryRequestSchema,
     EntrySummaryFilterSchema,

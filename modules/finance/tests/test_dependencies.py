@@ -1,8 +1,8 @@
 import pytest
 
 from modules.core.logger import logger
-from modules.entry.dependencies import get_entry_service
-from modules.entry.services import EntryService
+from modules.finance.dependencies import get_entry_service
+from modules.finance.services import EntryService
 
 
 @pytest.mark.asyncio(loop_scope="session")

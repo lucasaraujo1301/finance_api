@@ -5,9 +5,9 @@ import pytest
 
 from fastapi import status
 
-from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
-from modules.entry.repository import EntryRepository
-from modules.entry.tests.fixtures.factories import EntryFactory
+from modules.finance.enums import EntryTypeEnum, PaymentMethodEnum
+from modules.finance.repository import EntryRepository
+from modules.finance.tests.fixtures.factories import EntryFactory
 from modules.user.exceptions import InvalidCredentials
 from modules.user.tests.mixin import AuthRequestMixin
 

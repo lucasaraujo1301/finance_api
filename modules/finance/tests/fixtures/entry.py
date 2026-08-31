@@ -2,8 +2,8 @@ import pytest_asyncio
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.entry.models import EntryModel
-from modules.entry.tests.fixtures.factories import EntryFactory
+from modules.finance.models import EntryModel
+from modules.finance.tests.fixtures.factories import EntryFactory
 from modules.user.models import UserModel
 
 

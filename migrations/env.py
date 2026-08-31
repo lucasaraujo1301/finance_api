@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from modules.core.config import settings
 from modules.core.models import Base
-from modules.entry.models import EntryModel  # noqa: F401
+from modules.finance.models import EntryModel  # noqa: F401
 from modules.service_account.models import ServiceAccountModel  # noqa: F401
 from modules.user.models import UserModel  # noqa: F401
 

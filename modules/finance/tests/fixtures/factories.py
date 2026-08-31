@@ -6,8 +6,8 @@ from polyfactory.factories.sqlalchemy_factory import SQLAlchemyFactory
 from polyfactory.fields import Use
 
 from modules.core.tests.fixtures import BaseFactory
-from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
-from modules.entry.models import EntryModel
+from modules.finance.enums import EntryTypeEnum, PaymentMethodEnum
+from modules.finance.models import EntryModel
 
 
 class EntryFactory(BaseFactory[EntryModel]):

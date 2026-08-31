@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from modules.core.schemas import BaseSchema, TimestampSchemaMixin
 from modules.core.types import Balance, Money
-from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
-from modules.entry.types import EntryType, PaymentMethod
+from modules.finance.enums import EntryTypeEnum, PaymentMethodEnum
+from modules.finance.types import EntryType, PaymentMethod
 
 
 class BaseEntrySchema(BaseSchema):

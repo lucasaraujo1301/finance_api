@@ -2,7 +2,7 @@ from typing import Annotated
 
 from pydantic import PlainSerializer
 
-from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
+from modules.finance.enums import EntryTypeEnum, PaymentMethodEnum
 
 EntryType = Annotated[
     EntryTypeEnum,

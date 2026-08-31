@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Query, status
 
 from modules.core.schemas import ApiResponse
-from modules.entry.dependencies import EntryServiceDep
-from modules.entry.schemas import (
+from modules.finance.dependencies import EntryServiceDep
+from modules.finance.schemas import (
     EntryFilterSchema,
     EntryPage,
     EntryRequestSchema,

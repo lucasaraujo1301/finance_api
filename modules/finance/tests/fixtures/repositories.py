@@ -2,7 +2,7 @@ import pytest
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.entry.repository import EntryRepository
+from modules.finance.repository import EntryRepository
 
 
 @pytest.fixture

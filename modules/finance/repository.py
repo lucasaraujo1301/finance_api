@@ -7,9 +7,9 @@ from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.core.repositories import BaseRepository
-from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
-from modules.entry.models import EntryModel
-from modules.entry.schemas import EntryFilterSchema, EntryPage, EntrySummaryFilterSchema, EntrySummarySchema
+from modules.finance.enums import EntryTypeEnum, PaymentMethodEnum
+from modules.finance.models import EntryModel
+from modules.finance.schemas import EntryFilterSchema, EntryPage, EntrySummaryFilterSchema, EntrySummarySchema
 
 
 class EntryRepository(BaseRepository[EntryModel]):

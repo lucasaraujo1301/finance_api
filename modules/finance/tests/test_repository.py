@@ -8,11 +8,11 @@ from fastapi_pagination import Params
 from fastapi_pagination.api import set_params
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.entry.enums import EntryTypeEnum, PaymentMethodEnum
-from modules.entry.models import EntryModel
-from modules.entry.repository import EntryRepository
-from modules.entry.schemas import EntryFilterSchema, EntrySummaryFilterSchema
-from modules.entry.tests.fixtures.factories import EntryFactory
+from modules.finance.enums import EntryTypeEnum, PaymentMethodEnum
+from modules.finance.models import EntryModel
+from modules.finance.repository import EntryRepository
+from modules.finance.schemas import EntryFilterSchema, EntrySummaryFilterSchema
+from modules.finance.tests.fixtures.factories import EntryFactory
 from modules.user.models import UserModel
 from modules.user.tests.fixtures.factories import UserFactory
 

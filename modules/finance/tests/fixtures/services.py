@@ -1,8 +1,8 @@
 import pytest
 
 from modules.core.logger import logger
-from modules.entry.repository import EntryRepository
-from modules.entry.services import EntryService
+from modules.finance.repository import EntryRepository
+from modules.finance.services import EntryService
 from modules.user.services import UserService
 
 
