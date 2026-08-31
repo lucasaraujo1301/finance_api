@@ -3,4 +3,6 @@ repos:
     rev: v0.15.0
     hooks:
       - id: ruff-check
+        stages: [pre-commit]
       - id: ruff-format
+        stages: [pre-commit]

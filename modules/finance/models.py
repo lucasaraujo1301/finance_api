@@ -3,11 +3,10 @@ from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, Uuid, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from modules.core.models import Base
 from modules.finance.enums import EntryTypeEnum, PaymentMethodEnum
-from modules.user.models import UserModel
 
 
 class EntryModel(Base):
