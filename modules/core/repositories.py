@@ -16,8 +16,7 @@ class BaseRepository(Generic[T]):
 
     async def create(self, instance: T) -> T:
         self._session.add(instance)
-        await self._session.commit()
-        await self._session.refresh(instance)
+        await self._session.flush()
         return instance
 
     async def get_by_id(self, model_id: UUID | str) -> T | None:
@@ -26,8 +25,7 @@ class BaseRepository(Generic[T]):
     async def update(self, model: T) -> T:
         model.updated_at = datetime.now(timezone.utc)
         self._session.add(model)
-        await self._session.commit()
-        await self._session.refresh(model)
+        await self._session.flush()
         return model
 
     async def delete(self, model: T) -> None:

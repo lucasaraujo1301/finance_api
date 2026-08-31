@@ -37,6 +37,8 @@ class TestEntryRouter(AuthRequestMixin):
             "category": "snack",
             "description": "Lunch",
             "payment_date": payload["payment_date"],
+            "installment": 1,
+            "total_installment": 1,
             "created_at": response.json()["data"]["created_at"],
             "updated_at": None,
             "deleted_at": None,
@@ -46,6 +48,34 @@ class TestEntryRouter(AuthRequestMixin):
         assert len(entries) == 1
         assert entries[0].id == UUID(response.json()["data"]["id"])
         assert entries[0].user_id == user.id
+
+    async def test_create_entry_with_installments_persists_batch_and_returns_first_entry(
+        self, client, db_session, user
+    ):
+        payload = {
+            "amount": "10.50",
+            "payment_method": "pix",
+            "category": "snack",
+            "description": "Lunch",
+            "payment_date": "2024-01-31",
+            "total_installment": 3,
+        }
+
+        response = await self.auth_post(client, user, path="/", json=payload)
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json()["data"]["installment"] == 1
+        assert response.json()["data"]["total_installment"] == 3
+        assert response.json()["data"]["payment_date"] == "2024-01-31"
+
+        entries = sorted(await EntryRepository(db_session).get_by_user_id(user.id), key=lambda entry: entry.installment)
+        assert len(entries) == 3
+        assert entries[0].id == UUID(response.json()["data"]["id"])
+        assert [entry.installment for entry in entries] == [1, 2, 3]
+        assert [entry.total_installment for entry in entries] == [3, 3, 3]
+        assert [entry.payment_date.isoformat() for entry in entries] == ["2024-01-31", "2024-02-29", "2024-03-31"]
+        assert len({entry.installment_group_id for entry in entries}) == 1
+        assert entries[0].installment_group_id is not None
 
     async def test_create_entry_rejects_future_payment_date(self, client, user):
         response = await self.auth_post(
@@ -139,6 +169,8 @@ class TestEntryRouter(AuthRequestMixin):
             "description": "Lunch",
             "payment_date": payload["payment_date"],
             "created_at": response.json()["data"]["created_at"],
+            "installment": 1,
+            "total_installment": 1,
             "updated_at": None,
             "deleted_at": None,
         }

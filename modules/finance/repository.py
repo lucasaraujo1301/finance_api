@@ -16,6 +16,11 @@ class EntryRepository(BaseRepository[EntryModel]):
     def __init__(self, session: AsyncSession):
         super().__init__(session, EntryModel)
 
+    async def add_batch(self, entries: list[EntryModel]) -> list[EntryModel]:
+        self._session.add_all(entries)
+        await self._session.flush()
+        return entries
+
     async def get_by_user_id(self, user_id: UUID) -> list[EntryModel]:
         return list(await self._session.scalars(select(EntryModel).where(EntryModel.user_id == user_id)))
 

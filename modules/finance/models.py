@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, Uuid, func
+from sqlalchemy import Date, Enum, ForeignKey, Integer, Numeric, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from modules.core.models import Base
@@ -22,6 +22,10 @@ class EntryModel(Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     category: Mapped[str] = mapped_column(String(length=125), nullable=False)
     description: Mapped[str | None] = mapped_column(String(length=255), nullable=True)
+
+    installment_group_id: Mapped[UUID | None] = mapped_column(nullable=True)
+    installment: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    total_installment: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
 
     # FK
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)

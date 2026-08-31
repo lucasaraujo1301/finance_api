@@ -42,6 +42,30 @@ class TestEntryRepository:
         assert result.description == "Lunch"
         assert result.payment_date == payment_date
 
+    async def test_add_batch_persists_entries_and_assigns_ids(self, db_session: AsyncSession, user: UserModel):
+        repo = EntryRepository(db_session)
+        entries = [
+            EntryModel(
+                user_id=user.id,
+                entry_type=EntryTypeEnum.DEBIT,
+                payment_method=PaymentMethodEnum.CREDIT_CARD,
+                amount=Decimal("10.50"),
+                payment_date=datetime.date(2024, 1, 31),
+                category="snack",
+                description="Lunch",
+                installment=installment,
+                total_installment=2,
+            )
+            for installment in range(1, 3)
+        ]
+
+        result = await repo.add_batch(entries)
+
+        assert result == entries
+        assert [entry.installment for entry in result] == [1, 2]
+        assert all(entry.id is not None for entry in result)
+        assert all(entry.user_id == user.id for entry in result)
+
     async def test_get_by_user_id_returns_only_entries_for_user(
         self, db_session: AsyncSession, user: UserModel, entry: EntryModel
     ):

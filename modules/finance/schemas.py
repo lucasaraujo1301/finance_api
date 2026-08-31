@@ -17,6 +17,7 @@ class BaseEntrySchema(BaseSchema):
     category: str
     description: str | None
     payment_date: date
+    total_installment: int = Field(default=1)
 
 
 class EntryRequestSchema(BaseEntrySchema):
@@ -24,6 +25,7 @@ class EntryRequestSchema(BaseEntrySchema):
     payment_date: date = Field(default_factory=date.today)
     category: str = Field(max_length=125)
     description: str | None = Field(default=None, max_length=255)
+    total_installment: int = Field(default=1)
 
     @field_validator("payment_date")
     @classmethod
@@ -39,6 +41,7 @@ class TelegramEntryRequestSchema(EntryRequestSchema):
 
 class EntrySchema(TimestampSchemaMixin, BaseEntrySchema):
     id: UUID
+    installment: int = Field(default=1)
 
 
 class EntrySummaryFilterSchema(BaseModel):

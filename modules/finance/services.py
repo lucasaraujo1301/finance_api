@@ -1,5 +1,7 @@
 from logging import Logger
-from uuid import UUID
+from uuid import UUID, uuid4
+
+from dateutil.relativedelta import relativedelta
 
 from modules.finance.models import EntryModel
 from modules.finance.repository import EntryRepository
@@ -25,6 +27,8 @@ class EntryService:
         created_by_service_account_id: UUID | None = None,
     ) -> EntryModel:
         self.logger.info("Creating new entry", extra={"user_id": str(user_id)})
+        if data.total_installment > 1:
+            return await self._create_batch(user_id, data, created_by_service_account_id)
         entry = EntryModel(
             user_id=user_id,
             created_by_service_account_id=created_by_service_account_id,
@@ -52,3 +56,27 @@ class EntryService:
 
     async def get_summary(self, user_id: UUID, query_params: EntrySummaryFilterSchema):
         return await self._entry_repository.get_summary(user_id, query_params)
+
+    async def _create_batch(
+        self,
+        user_id: UUID,
+        data: EntryRequestSchema,
+        created_by_service_account_id: UUID | None = None,
+    ) -> EntryModel:
+        group_id = uuid4()
+        entries = []
+        for i in range(1, data.total_installment + 1):
+            payment_date = data.payment_date + relativedelta(months=i - 1)
+            entries.append(
+                EntryModel(
+                    user_id=user_id,
+                    created_by_service_account_id=created_by_service_account_id,
+                    **data.model_dump(exclude={"payment_date"}),
+                    payment_date=payment_date,
+                    installment=i,
+                    installment_group_id=group_id,
+                )
+            )
+
+        entries = await self._entry_repository.add_batch(entries)
+        return entries[0]

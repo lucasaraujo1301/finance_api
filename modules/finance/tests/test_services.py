@@ -5,6 +5,7 @@ import pytest
 
 from fastapi_pagination import Params
 from fastapi_pagination.api import set_params
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.finance.enums import EntryTypeEnum, PaymentMethodEnum
@@ -50,6 +51,38 @@ class TestEntryService:
         assert result.category == "snack"
         assert result.description == "Lunch"
         assert result.payment_date == payment_date
+
+    async def test_create_with_installments_persists_batch_and_returns_first_entry(
+        self,
+        db_session: AsyncSession,
+        user: UserModel,
+        entry_service,
+    ):
+        data = EntryRequestSchema(
+            amount=Decimal("10.50"),
+            entry_type=EntryTypeEnum.DEBIT,
+            payment_method=PaymentMethodEnum.PIX,
+            category="snack",
+            description="Lunch",
+            payment_date=date(2024, 1, 31),
+            total_installment=3,
+        )
+
+        result = await entry_service.create(user.id, data)
+        persisted = list(
+            await db_session.scalars(
+                select(EntryModel).where(EntryModel.user_id == user.id).order_by(EntryModel.installment)
+            )
+        )
+
+        assert result.id == persisted[0].id
+        assert result.installment == 1
+        assert len(persisted) == 3
+        assert [entry.installment for entry in persisted] == [1, 2, 3]
+        assert [entry.total_installment for entry in persisted] == [3, 3, 3]
+        assert [entry.payment_date.isoformat() for entry in persisted] == ["2024-01-31", "2024-02-29", "2024-03-31"]
+        assert len({entry.installment_group_id for entry in persisted}) == 1
+        assert persisted[0].installment_group_id is not None
 
     async def test_create_from_telegram_validates_user_and_delegates_creation(
         self,
